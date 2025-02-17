@@ -6,7 +6,8 @@ struct SplashScreenView: View {
     
     var body: some View {
         if isActive {
-            SignUpView() // Onboarding ekranına geçiş
+            AppEntryView()
+                .font(CustomFont.regular(size: 16))// Onboarding ekranına geçiş
         } else {
             VStack {
                 Image("fosur_logo") // Logo

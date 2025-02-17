@@ -1,36 +1,100 @@
 import SwiftUI
 
 struct OnboardingStartView: View {
-    @State private var showTermsPopup = false
-    @State private var showPrivacyPopup = false
+    @Binding var rootView: RootViewType
+    @Binding var isTransitioning: Bool // Geçiş sürecini AppEntryView'e bildireceğiz
+
+    @State private var showSheet = false
+    @State private var showTermsOfService = false
+    @State private var showPrivacyPolicy = false
 
     var body: some View {
         VStack {
-            Spacer().frame(height: 60)
-
-            LogoView() // Logo buraya geldi
+            Image("fosur_logo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 250, height: 250)
+                .padding(.top, 100)
 
             Spacer()
 
-            ButtonSection() // Butonlar artık ayrı dosyada
+            Button(action: {
+                showSheet = true
+            }) {
+                Text("Başlayalım!")
+                    .font(.title3)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.logo)
+                    .cornerRadius(12)
+                    .padding(.horizontal, 24)
+                    .fontWeight(.bold)
+            }
+            .padding(.bottom, 8)
 
-            TermsText(showTermsPopup: $showTermsPopup, showPrivacyPopup: $showPrivacyPopup) // Metin bileşeni
+            VStack(spacing: 2) {
+                Text("Devam ederek,")
+                    .font(.footnote)
+                    .foregroundColor(.gray)
+                HStack {
+                    Button(action: { showTermsOfService = true }) {
+                        Text("Kullanıcı Sözleşmesi")
+                            .font(.footnote)
+                            .underline()
+                            .foregroundColor(.gray)
+                    }
 
-            Spacer().frame(height: 20)
+                    Text("ve")
+                        .font(.footnote)
+                        .foregroundColor(.gray)
+
+                    Button(action: { showPrivacyPolicy = true }) {
+                        Text("Gizlilik Politikası'nı")
+                            .font(.footnote)
+                            .underline()
+                            .foregroundColor(.gray)
+                    }
+                }
+                Text("kabul etmiş olursunuz.")
+                    .font(.footnote)
+                    .foregroundColor(.gray)
+            }
+            .padding(.bottom, 16)
+
+            Spacer().frame(height: 10)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color("BackgroundColor"))
         .ignoresSafeArea()
-        .overlay(
-            showTermsPopup ? TermsPopupView(isPresented: $showTermsPopup, title: "Kullanım Şartları", content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit...Lorem ipsum dolor sit amet, consectetur adipiscing elit...Lorem ipsum dolor sit amet, consectetur adipiscing elit...Lorem ipsum dolor sit amet, consectetur adipiscing elit...Lorem ipsum dolor sit amet, consectetur adipiscing elit...Lorem ipsum dolor sit amet, consectetur adipiscing elit...Lorem ipsum dolor sit amet, consectetur adipiscing elit...Lorem ipsum dolor sit amet, consectetur adipiscing elit...Lorem ipsum dolor sit amet, consectetur adipiscing elit...Lorem ipsum dolor sit amet, consectetur adipiscing elit...Lorem ipsum dolor sit amet, consectetur adipiscing elit...Lorem ipsum dolor sit amet, consectetur adipiscing elit...Lorem ipsum dolor sit amet, consectetur adipiscing elit...Lorem ipsum dolor sit amet, consectetur adipiscing elit...Lorem ipsum dolor sit amet, consectetur adipiscing elit...Lorem ipsum dolor sit amet, consectetur adipiscing elit...") : nil
-        )
-        .overlay(
-            showPrivacyPopup ? TermsPopupView(isPresented: $showPrivacyPopup, title: "Gizlilik Politikası", content: "Vestibulum ante ipsum primis in faucibus orci luctus...") : nil
-        )
+        .sheet(isPresented: $showSheet) {
+            AuthSelectionSheetView {
+                showSheet = false
+
+                // Sheet kapandıktan sonra geçiş yapalım:
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    withAnimation {
+                        isTransitioning = true
+                    }
+
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        withAnimation {
+                            rootView = .home
+                            isTransitioning = false
+                        }
+                    }
+                }
+            }
+            .presentationDetents([.fraction(0.55)])
+            .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showTermsOfService) {
+            TermsOfServiceView()
+                .presentationDetents([.medium, .large])
+        }
+        .sheet(isPresented: $showPrivacyPolicy) {
+            PrivacyPolicyView()
+                .presentationDetents([.medium, .large])
+        }
     }
-}
-
-
-#Preview {
-    OnboardingStartView()
 }

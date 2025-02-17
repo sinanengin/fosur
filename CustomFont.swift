@@ -1,18 +1,27 @@
-//
-//  CustomFont.swift
-//  fosur
-//
-//  Created by Sinan Engin Yıldız on 18.02.2025.
-//
-
 import SwiftUI
 
-struct CustomFont: View {
-    var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+struct CustomFont {
+    static func regular(size: CGFloat) -> Font {
+        .custom("Inter-Regular", size: size)
     }
-}
 
-#Preview {
-    CustomFont()
+    static func bold(size: CGFloat) -> Font {
+        .custom("Inter-Bold", size: size)
+    }
+
+    static func medium(size: CGFloat) -> Font {
+        .custom("Inter-Medium", size: size)
+    }
+
+    static func semiBold(size: CGFloat) -> Font {
+        .custom("Inter-SemiBold", size: size)
+    }
+    
+    static func extraLight(size: CGFloat) -> Font {
+        .custom("Inter-ExtraLight", size: size)
+    }
+    
+    static func light(size: CGFloat) -> Font {
+        .custom("Inter-Light", size: size)
+    }
 }

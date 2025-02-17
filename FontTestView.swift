@@ -1,15 +1,21 @@
-//
-//  FontTestView.swift
-//  fosur
-//
-//  Created by Sinan Engin Yıldız on 18.02.2025.
-//
-
 import SwiftUI
 
 struct FontTestView: View {
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        VStack {
+            Text("Font Test Sayfası")
+                .font(.title)
+
+            Button("Yüklü Fontları Göster") {
+                for family in UIFont.familyNames {
+                    print("Family: \(family)")
+                    for name in UIFont.fontNames(forFamilyName: family) {
+                        print("   \(name)")
+                    }
+                }
+            }
+        }
+        .padding()
     }
 }
 

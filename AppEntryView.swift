@@ -1,18 +1,26 @@
-//
-//  AppEntryView.swift
-//  fosur
-//
-//  Created by Sinan Engin Yıldız on 17.02.2025.
-//
-
 import SwiftUI
 
-struct AppEntryView: View {
-    var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
-    }
+enum RootViewType {
+    case onboarding
+    case home
 }
 
-#Preview {
-    AppEntryView()
+struct AppEntryView: View {
+    @State private var rootView: RootViewType = .onboarding
+    @State private var isTransitioning = false // Geçiş sürecini kontrol ediyoruz
+
+    var body: some View {
+        ZStack {
+            if rootView == .onboarding {
+                OnboardingStartView(rootView: $rootView, isTransitioning: $isTransitioning)
+                    .opacity(isTransitioning ? 0 : 1)
+                    .animation(.easeInOut(duration: 0.4), value: isTransitioning)
+            } else if rootView == .home {
+                HomeView()
+                    .opacity(isTransitioning ? 0 : 1)
+                    .animation(.easeInOut(duration: 0.4), value: isTransitioning)
+            }
+        }
+        .transition(.opacity)
+    }
 }

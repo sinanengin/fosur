@@ -1,18 +1,15 @@
-//
-//  DividerWithOr.swift
-//  fosur
-//
-//  Created by Sinan Engin Yıldız on 17.02.2025.
-//
-
 import SwiftUI
 
 struct DividerWithOr: View {
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        HStack {
+            VStack { Divider().background(Color.gray) }
+            Text("veya")
+                .font(.footnote) // Daha küçük font
+                .foregroundColor(.gray)
+                .padding(.horizontal, 8)
+            VStack { Divider().background(Color.gray) }
+        }
+        .padding(.horizontal, 24)
     }
-}
-
-#Preview {
-    DividerWithOr()
 }

@@ -5,4 +5,7 @@ extension Color {
     static let textPrimary = Color("PrimaryTextColor")
     static let backgroundPrimary = Color("BackgroundColorPrimary")
     static let secondaryMainColor = Color("SecondaryMainColor")
+    static let logoSecondary = Color(logoColor2)
+   
+
 }
