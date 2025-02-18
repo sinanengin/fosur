@@ -4,51 +4,45 @@ struct CustomTabBarView: View {
     @Binding var selectedTab: TabItem
 
     var body: some View {
-        HStack {
-            ForEach(TabItem.allCases, id: \.self) { tab in
-                VStack {
-                    Button(action: {
-                        withAnimation(.easeInOut(duration: 0.25)) {
-                            selectedTab = tab
-                        }
-                    }) {
-                        VStack(spacing: 2) {
-                            Image(systemName: tab.icon)
-                                .font(.system(size: selectedTab == tab ? 22 : 20, weight: selectedTab == tab ? .bold : .light)) // Kalınlık animasyonu
-                                .foregroundColor(selectedTab == tab ? Color.logo : Color.primaryText)
+        VStack(spacing: 0) {
+            Divider()
+                .frame(height: 0.5)
+                .background(Color.primaryText.opacity(0.2))
 
-                            Text(tab.rawValue)
-                                .font(selectedTab == tab ?
-                                      CustomFont.light(size: 10) : // Seçili: Light
-                                      CustomFont.extraLight(size: 10)) // Seçili değil: ExtraLight
-                                .foregroundColor(selectedTab == tab ? Color.logo : Color.primaryText)
-                        }
-                    }
-                    .buttonStyle(PlainButtonStyle())
+            HStack {
+                ForEach(TabItem.allCases, id: \.self) { tab in
+                    VStack {
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                selectedTab = tab
+                            }
+                        }) {
+                            VStack(spacing: 4) {
+                                Image(tab.iconName)
+                                    .resizable()
+                                    .renderingMode(.template) // İkonun rengini değiştirebilmek için
+                                    .scaledToFit()
+                                    .frame(width: selectedTab == tab ? 26 : 24, height: selectedTab == tab ? 26 : 24)
+                                    .foregroundColor(selectedTab == tab ? Color.logo : Color.primaryText)
 
-                    // Alt çizgi İSTERSEK, animasyonlu yapabiliriz
-                    if selectedTab == tab {
-                        Rectangle()
-                            .frame(height: 2)
-                            .foregroundColor(Color.logo)
-                            .padding(.top, 2)
-                            .transition(.opacity)
-                    } else {
-                        Rectangle()
-                            .frame(height: 2)
-                            .foregroundColor(.clear)
-                            .padding(.top, 2)
+                                Text(tab.rawValue)
+                                    .font(selectedTab == tab ?
+                                          CustomFont.light(size: 11) :
+                                          CustomFont.extraLight(size: 11))
+                                    .fontWeight(selectedTab == tab ? .medium : .light)
+                                    .foregroundColor(selectedTab == tab ? Color.logo : Color.primaryText)
+                            }
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
+                    .frame(maxWidth: .infinity)
                 }
-                .frame(maxWidth: .infinity)
             }
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            .padding(.bottom, 32)
+            .background(Color("BackgroundColor"))
         }
-        .padding(.horizontal, 16) // Sağdan soldan boşluk
-        .padding(.top, 6) // Üstten biraz boşluk
-        .padding(.bottom, 24) // Home Indicator boşluğu için aşağıdan fazla boşluk
-        .background(Color("BackgroundColor"))
-        .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: -2)
-        .animation(.easeInOut(duration: 0.2), value: selectedTab) // Bütün değişiklikleri kapsayan animasyon
     }
 }
 

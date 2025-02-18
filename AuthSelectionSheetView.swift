@@ -18,11 +18,11 @@ struct AuthSelectionSheetView: View {
                 .padding(.horizontal, 24)
 
             VStack(spacing: 12) {
-                AuthButton(title: "Apple ile devam et", imageName: "applelogo", isSystemImage: false) {
+                AuthButton(title: "Apple ile devam et   ", imageName: "applelogo", isSystemImage: false) {
                     onLoginSuccess()
                 }
 
-                AuthButton(title: "Google ile devam et", imageName: "googlelogo", isSystemImage: false) {
+                AuthButton(title: "Google ile devam et ", imageName: "googlelogo", isSystemImage: false) {
                     onLoginSuccess()
                 }
 

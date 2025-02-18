@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct CampaignsView: View {
+struct NewsView: View {
     var body: some View {
         Text("Kampanyalar")
             .font(CustomFont.bold(size: 25))
@@ -9,5 +9,5 @@ struct CampaignsView: View {
 }
 
 #Preview {
-    CampaignsView()
+    NewsView()
 }

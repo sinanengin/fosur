@@ -8,7 +8,7 @@ struct HomeView: View {
             Spacer()
 
             TabView(selection: $selectedTab) {
-                CampaignsView().tag(TabItem.campaigns)
+                NewsView().tag(TabItem.campaigns)
                 MyVehiclesView().tag(TabItem.myVehicles)
                 CallUsView().tag(TabItem.callUs)
                 MessagesView().tag(TabItem.messages)
