@@ -2,11 +2,13 @@ import SwiftUI
 
 struct OnboardingStartView: View {
     @Binding var rootView: RootViewType
-    @Binding var isTransitioning: Bool // Geçiş sürecini AppEntryView'e bildireceğiz
+    @Binding var isTransitioning: Bool
 
     @State private var showSheet = false
     @State private var showTermsOfService = false
     @State private var showPrivacyPolicy = false
+
+    @EnvironmentObject var appState: AppState // Kullanıcı durumu için
 
     var body: some View {
         VStack {
@@ -68,23 +70,17 @@ struct OnboardingStartView: View {
         .background(Color("BackgroundColor"))
         .ignoresSafeArea()
         .sheet(isPresented: $showSheet) {
-            AuthSelectionSheetView {
-                showSheet = false
-
-                // Sheet kapandıktan sonra geçiş yapalım:
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    withAnimation {
-                        isTransitioning = true
-                    }
-
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        withAnimation {
-                            rootView = .home
-                            isTransitioning = false
-                        }
-                    }
-                }
-            }
+            AuthSelectionSheetView(
+                onLoginSuccess: {
+                    appState.setLoggedInUser()
+                    handleTransitionToHome()
+                },
+                onGuestContinue: {
+                    appState.setGuestUser()
+                    handleTransitionToHome()
+                },
+                hideGuestOption: false // Misafir seçeneği burada açık olmalı
+            )
             .presentationDetents([.fraction(0.55)])
             .presentationDragIndicator(.visible)
         }
@@ -95,6 +91,24 @@ struct OnboardingStartView: View {
         .sheet(isPresented: $showPrivacyPolicy) {
             PrivacyPolicyView()
                 .presentationDetents([.medium, .large])
+        }
+    }
+
+    private func handleTransitionToHome() {
+        showSheet = false
+
+        // Sheet kapandıktan sonra geçiş yapalım:
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            withAnimation {
+                isTransitioning = true
+            }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                withAnimation {
+                    rootView = .home
+                    isTransitioning = false
+                }
+            }
         }
     }
 }

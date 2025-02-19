@@ -1,18 +1,9 @@
-//
-//  User.swift
-//  fosur
-//
-//  Created by Sinan Engin Yıldız on 19.02.2025.
-//
+import Foundation
 
-import SwiftUI
-
-struct User: View {
-    var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
-    }
-}
-
-#Preview {
-    User()
+struct User {
+    let id: UUID
+    let name: String
+    let email: String
+    let phoneNumber: String
+    var vehicles: [Vehicle] = []
 }

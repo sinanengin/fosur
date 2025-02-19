@@ -1,18 +1,11 @@
-//
-//  Order.swift
-//  fosur
-//
-//  Created by Sinan Engin Yıldız on 19.02.2025.
-//
+import Foundation
 
-import SwiftUI
-
-struct Order: View {
-    var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
-    }
-}
-
-#Preview {
-    Order()
+struct Order: Identifiable {
+    let id: UUID
+    let vehicleId: UUID
+    let date: Date
+    let services: [String]
+    let beforeImages: [String]
+    let afterImages: [String]
+    let price: Double
 }

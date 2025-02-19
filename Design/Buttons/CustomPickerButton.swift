@@ -1,18 +1,27 @@
-//
-//  CustomPickerButton.swift
-//  fosur
-//
-//  Created by Sinan Engin Yıldız on 19.02.2025.
-//
-
 import SwiftUI
 
 struct CustomPickerButton: View {
-    var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
-    }
-}
+    var title: String
+    var selectedText: String?
+    var action: () -> Void
 
-#Preview {
-    CustomPickerButton()
+    var body: some View {
+        Button(action: action) {
+            HStack {
+                Text(selectedText ?? title)
+                    .foregroundColor(selectedText == nil ? .gray : .primary)
+                Spacer()
+                Image(systemName: "chevron.down")
+                    .foregroundColor(.gray)
+            }
+            .padding()
+            .frame(height: 50)
+            .background(Color.white)
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.logo, lineWidth: 1)
+            )
+        }
+    }
 }

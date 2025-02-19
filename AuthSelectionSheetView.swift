@@ -2,6 +2,10 @@ import SwiftUI
 
 struct AuthSelectionSheetView: View {
     var onLoginSuccess: () -> Void
+    var onGuestContinue: () -> Void
+    var hideGuestOption: Bool
+
+    @Environment(\.dismiss) var dismiss
 
     var body: some View {
         VStack(spacing: 16) {
@@ -18,35 +22,43 @@ struct AuthSelectionSheetView: View {
                 .padding(.horizontal, 24)
 
             VStack(spacing: 12) {
-                AuthButton(title: "Apple ile devam et   ", imageName: "applelogo", isSystemImage: false) {
-                    onLoginSuccess()
+                AuthButton(title: "Apple ile devam et", imageName: "applelogo", isSystemImage: false) {
+                    handleLoginSuccess()
                 }
-
-                AuthButton(title: "Google ile devam et ", imageName: "googlelogo", isSystemImage: false) {
-                    onLoginSuccess()
+                AuthButton(title: "Google ile devam et", imageName: "googlelogo", isSystemImage: false) {
+                    handleLoginSuccess()
                 }
-
                 AuthButton(title: "Telefon ile devam et", imageName: "phone.fill", isSystemImage: true) {
-                    onLoginSuccess()
+                    handleLoginSuccess()
                 }
             }
             .padding(.horizontal, 24)
 
-            DividerWithOr()
+            if !hideGuestOption {
+                DividerWithOr()
 
-            Button(action: {
-                onLoginSuccess()
-            }) {
-                Text("Misafir olarak devam et")
-                    .font(.subheadline)
-                    .foregroundColor(.gray)
-                    .padding(.bottom, 0)
+                Button(action: {
+                    handleGuestContinue()
+                }) {
+                    Text("Misafir olarak devam et")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                }
             }
-            .padding(.bottom, 16)
 
             Spacer()
         }
         .padding(.top, 8)
         .background(Color("BackgroundColor"))
+    }
+
+    private func handleLoginSuccess() {
+        onLoginSuccess()
+        dismiss()
+    }
+
+    private func handleGuestContinue() {
+        onGuestContinue()
+        dismiss()
     }
 }

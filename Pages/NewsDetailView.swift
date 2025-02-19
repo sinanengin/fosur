@@ -1,18 +1,32 @@
-//
-//  NewsDetailView.swift
-//  fosur
-//
-//  Created by Sinan Engin Yıldız on 18.02.2025.
-//
-
 import SwiftUI
 
 struct NewsDetailView: View {
-    var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
-    }
-}
+    var news: NewsItem
+    @Environment(\.dismiss) var dismiss
 
-#Preview {
-    NewsDetailView()
+    var body: some View {
+        VStack(alignment: .leading) {
+            Button(action: { dismiss() }) {
+                Image(systemName: "chevron.left")
+                    .foregroundColor(.gray)
+                    .padding()
+            }
+
+            Image(news.image)
+                .resizable()
+                .scaledToFit()
+                .frame(height: 200)
+                .cornerRadius(12)
+
+            Text(news.title)
+                .font(CustomFont.bold(size: 24))
+                .padding(.vertical, 8)
+
+            Text(news.description)
+                .font(CustomFont.regular(size: 16))
+
+            Spacer()
+        }
+        .padding()
+    }
 }

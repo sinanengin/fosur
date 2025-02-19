@@ -1,18 +1,19 @@
-//
-//  CustomInputField.swift
-//  fosur
-//
-//  Created by Sinan Engin Yıldız on 19.02.2025.
-//
-
 import SwiftUI
 
 struct CustomInputField: View {
-    var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
-    }
-}
+    var placeholder: String
+    @Binding var text: String
 
-#Preview {
-    CustomInputField()
+    var body: some View {
+        TextField(placeholder, text: $text)
+            .padding()
+            .frame(height: 50)
+            .background(Color.white)
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.logo, lineWidth: 1)
+            )
+            .foregroundColor(.primary)
+    }
 }

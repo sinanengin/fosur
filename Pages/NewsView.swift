@@ -3,80 +3,78 @@ import SwiftUI
 struct NewsView: View {
     @State private var selectedCategory: NewsCategory = .all
     @State private var showDetail = false
-    @State private var selectedNews: (title: String, description: String, image: String)?
+    @State private var selectedNews: NewsItem?
 
     var filteredNews: [NewsItem] {
         switch selectedCategory {
         case .all:
-            return newsData
+            return mockNewsData
         case .campaigns:
-            return newsData.filter { $0.type == .campaign }
+            return mockNewsData.filter { $0.type == NewsType.campaign }
         case .announcements:
-            return newsData.filter { $0.type == .announcement }
+            return mockNewsData.filter { $0.type == NewsType.announcement }
         }
     }
 
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 12) {
+                // Sayfa Başlığı
                 Text("Duyurular")
                     .font(CustomFont.bold(size: 28))
                     .padding(.top, 24)
                     .padding(.horizontal)
 
                 // Kategori Butonları
-                HStack {
+                HStack(spacing: 8) {
                     CategoryButton(title: "Tümü", isSelected: selectedCategory == .all) {
-                        selectedCategory = .all
+                        withAnimation {
+                            selectedCategory = .all
+                        }
                     }
                     CategoryButton(title: "Kampanyalar", isSelected: selectedCategory == .campaigns) {
-                        selectedCategory = .campaigns
+                        withAnimation {
+                            selectedCategory = .campaigns
+                        }
                     }
                     CategoryButton(title: "Duyurular", isSelected: selectedCategory == .announcements) {
-                        selectedCategory = .announcements
+                        withAnimation {
+                            selectedCategory = .announcements
+                        }
                     }
                 }
                 .padding(.horizontal)
 
-                // Kartlar
-                ScrollView {
-                    LazyVStack(spacing: 16) {
-                        ForEach(filteredNews, id: \.title) { news in
-                            NewsCardView(imageName: news.image, title: news.title, description: news.description, type: news.type)
-                                .onTapGesture {
-                                    selectedNews = (news.title, news.description, news.image)
-                                    showDetail = true
-                                }
+                // Kartlar + ScrollView + ScrollViewReader
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        LazyVStack(spacing: 16) {
+                            ForEach(filteredNews, id: \.id) { news in
+                                NewsCardView(news: news)
+                                    .id(news.id)
+                                    .onTapGesture {
+                                        selectedNews = news
+                                        showDetail = true
+                                    }
+                                    .transition(.opacity.combined(with: .scale)) // Animasyon
+                            }
+                        }
+                        .padding(.horizontal)
+                        .id("TOP")
+                    }
+                    .onChange(of: selectedCategory) {
+                        withAnimation(.easeInOut(duration: 0.4)) {
+                            proxy.scrollTo("TOP", anchor: .top)
                         }
                     }
-                    .padding(.horizontal)
                 }
             }
             .sheet(isPresented: $showDetail) {
                 if let news = selectedNews {
-                    NewsDetailView(title: news.title, description: news.description, imageName: news.image)
+                    NewsDetailView(news: news)
                 }
             }
+            .background(Color.white) // Arka plan temiz olsun
         }
     }
 }
-
-enum NewsCategory {
-    case all, campaigns, announcements
-}
-
-struct NewsItem {
-    let title: String
-    let description: String
-    let image: String
-    let type: NewsType
-}
-
-let newsData: [NewsItem] = [
-    .init(title: "Büyük İndirim!", description: "İlk alışverişinizde %50 indirim.", image: "campaign1", type: .campaign),
-    .init(title: "Kampanya 2", description: "Ücretsiz teslimat fırsatı!", image: "campaign2", type: .campaign),
-    .init(title: "Kampanya 3", description: "Üyelikte özel avantajlar.", image: "campaign3", type: .campaign),
-    .init(title: "Duyuru 1", description: "Çalışma saatlerimiz güncellendi.", image: "announcement1", type: .announcement),
-    .init(title: "Duyuru 2", description: "Şubemiz taşınıyor.", image: "announcement2", type: .announcement),
-    .init(title: "Duyuru 3", description: "Hizmet kalitemizi artırıyoruz!", image: "announcement3", type: .announcement),
-]

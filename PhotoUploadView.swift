@@ -1,18 +1,35 @@
-//
-//  PhotoUploadView.swift
-//  fosur
-//
-//  Created by Sinan Engin Yıldız on 19.02.2025.
-//
-
 import SwiftUI
 
 struct PhotoUploadView: View {
-    var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
-    }
-}
+    @Binding var images: [UIImage]
 
-#Preview {
-    PhotoUploadView()
+    var body: some View {
+        HStack {
+            ForEach(0..<images.count, id: \.self) { index in
+                ZStack {
+                    Image(uiImage: images[index])
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 80, height: 80)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                        )
+                        .background(Color.white)
+                        .clipped()
+
+                    if images[index] == UIImage(systemName: "plus")! {
+                        Image(systemName: "plus")
+                            .font(.system(size: 24))
+                            .foregroundColor(.gray.opacity(0.7))
+                    }
+                }
+                .onTapGesture {
+                    // Fotoğraf yükleme işlevi burada olacak
+                    print("Fotoğraf \(index + 1) seçildi")
+                }
+            }
+        }
+    }
 }

@@ -1,18 +1,31 @@
-//
-//  AppState.swift
-//  fosur
-//
-//  Created by Sinan Engin Yıldız on 19.02.2025.
-//
-
 import SwiftUI
 
-struct AppState: View {
-    var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
-    }
-}
+class AppState: ObservableObject {
+    @Published var isUserLoggedIn: Bool = false
+    @Published var currentUser: User? = nil
 
-#Preview {
-    AppState()
+    @Published var showAddVehicleView = false // EKLEDİK
+    @Published var showAuthSheet = false // Giriş yaparken açılan sheet
+
+    func setGuestUser() {
+        self.isUserLoggedIn = false
+        self.currentUser = User(
+            id: UUID(),
+            name: "Misafir Kullanıcı",
+            email: "misafir@fosur.com",
+            phoneNumber: "Yok",
+            vehicles: []
+        )
+    }
+
+    func setLoggedInUser() {
+        self.isUserLoggedIn = true
+        self.currentUser = User(
+            id: UUID(),
+            name: "Deneme Kullanıcı",
+            email: "deneme@fosur.com",
+            phoneNumber: "5551234567",
+            vehicles: []
+        )
+    }
 }
