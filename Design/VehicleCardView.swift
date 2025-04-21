@@ -4,23 +4,25 @@ struct VehicleCardView: View {
     let vehicle: Vehicle
 
     var body: some View {
-        HStack {
-            Image(systemName: "car.fill")
+        HStack(spacing: 12) {
+            Image("temp_car")
                 .resizable()
-                .frame(width: 50, height: 50)
-                .foregroundColor(.gray)
+                .scaledToFill()
+                .frame(width: 100, height: 70)
+                .clipped()
+                .cornerRadius(10)
 
-            VStack(alignment: .leading) {
-                Text(vehicle.brand)
-                    .font(CustomFont.bold(size: 16))
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(vehicle.brand)
+                        .font(CustomFont.bold(size: 16))
+                    Text(vehicle.model)
+                        .font(CustomFont.medium(size: 16))
+                }
 
-                Text(vehicle.model)
+                Text(vehicle.plate)
                     .font(CustomFont.regular(size: 14))
                     .foregroundColor(.gray)
-
-                Text(vehicle.type.rawValue)
-                    .font(CustomFont.regular(size: 12))
-                    .foregroundColor(.secondary)
             }
 
             Spacer()
@@ -28,19 +30,6 @@ struct VehicleCardView: View {
         .padding()
         .background(Color.white)
         .cornerRadius(12)
-        .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+        .shadow(radius: 1)
     }
-}
-
-#Preview {
-    VehicleCardView(vehicle: Vehicle(
-        id: UUID(),
-        brand: "Ford",
-        model: "Focus",
-        plate: "34 ABC 123",
-        type: .automobile, // Artık enum böyle kullanılır
-        images: [],
-        userId: UUID(),
-        lastServices: []
-    ))
 }

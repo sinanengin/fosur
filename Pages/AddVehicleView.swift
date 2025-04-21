@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct AddVehicleView: View {
+    var onDismiss: () -> Void
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var appState: AppState
 
@@ -11,238 +12,240 @@ struct AddVehicleView: View {
     @State private var plateLetters: String = ""
     @State private var plateNumbers: String = ""
 
-    @State private var uploadedPhotos: [UIImage] = Array(repeating: UIImage(systemName: "plus")!, count: 4)
+    @State private var exteriorPhotos: [UIImage] = []
+    @State private var interiorPhotos: [UIImage] = []
 
     @State private var showExitConfirmation = false
-
-    @State private var showBrandPicker = false
-    @State private var showModelPicker = false
+    @State private var showBrandSheet = false
+    @State private var showModelSheet = false
     @State private var showCityCodePicker = false
 
-    var isFormValid: Bool {
+    private var isFormValid: Bool {
         selectedBrandIndex != nil &&
         selectedModel != nil &&
         isPlateValid()
     }
-    private func isPlateValid() -> Bool {
-        let lettersCount = plateLetters.count
-        let numbersCount = plateNumbers.count
 
-        switch lettersCount {
-        case 1:
-            return numbersCount == 4
-        case 2:
-            return numbersCount == 3 || numbersCount == 4
-        case 3:
-            return numbersCount == 2
-        default:
-            return false
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 20) {
+                    headerView
+                    brandSection
+                
+                    modelSection
+                    plateSection
+                    if selectedModel != nil {
+                        photoUploadSection
+                        submitButton
+                    }
+                }
+                .padding()
+            }
+            .background(Color("BackgroundColor"))
+            .navigationBarBackButtonHidden(true)
+            .fullScreenCover(isPresented: $showBrandSheet) {
+                BrandSelectionView(
+                    brands: vehicleBrands,
+                    onSelect: { index in
+                        selectedBrandIndex = index
+                        selectedModel = nil
+                        showBrandSheet = false
+                    }
+                )
+            }
+            .fullScreenCover(isPresented: $showModelSheet) {
+                if let brandIndex = selectedBrandIndex {
+                    ModelSelectionView(
+                        brand: vehicleBrands[brandIndex],
+                        onSelect: { model in
+                            selectedModel = model
+                            showModelSheet = false
+                        }
+                    )
+                }
+            }
+            .sheet(isPresented: $showCityCodePicker) {
+                cityCodePicker
+            }
+            .confirmationDialog(
+                "Girdiğiniz bilgiler silinecektir. Emin misiniz?",
+                isPresented: $showExitConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Vazgeç", role: .cancel) {}
+                Button("Sil", role: .destructive) {
+                    dismiss()
+                    onDismiss()
+                }
+            }
         }
     }
 
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Üstte sadece Geri tuşu
-            HStack {
-                Button(action: { checkBeforeExit() }) {
-                    Image(systemName: "chevron.left")
-                        .font(.title2)
-                        .foregroundColor(.black)
-                }
-                Spacer()
+    // MARK: - Header
+    private var headerView: some View {
+        HStack {
+            Button {
+                checkBeforeExit()
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.title2)
+                    .foregroundColor(.black)
             }
-            .padding(.horizontal)
-
+            Spacer()
             Text("Araç Ekle")
-                .font(CustomFont.bold(size: 24))
-                .padding(.horizontal)
+                .font(CustomFont.bold(size: 22))
+            Spacer().frame(width: 24)
+        }
+    }
 
-            // MARKA SEÇİMİ
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Marka")
-                    .font(CustomFont.medium(size: 14))
-                    .foregroundColor(.gray)
+    // MARK: - Marka Seç
+    private var brandSection: some View {
+        CustomPickerButton(
+            title: "Marka Seç",
+            selectedText: selectedBrandIndex != nil ? vehicleBrands[selectedBrandIndex!].name : nil
+        ) {
+            showBrandSheet = true
+        }
+    }
 
+    // MARK: - Model Seç
+    private var modelSection: some View {
+        if selectedBrandIndex != nil {
+            return AnyView(
                 CustomPickerButton(
-                    title: "Marka Seç",
-                    selectedText: selectedBrandIndex != nil ? vehicleBrands[selectedBrandIndex!].name : nil
+                    title: "Model Seç",
+                    selectedText: selectedModel
                 ) {
-                    showBrandPicker = true
+                    showModelSheet = true
                 }
-            }
-            .padding(.horizontal)
+            )
+        }
+        return AnyView(EmptyView())
+    }
 
-            // MODEL SEÇİMİ
-            if let selectedBrandIndex {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Model")
-                        .font(CustomFont.medium(size: 14))
-                        .foregroundColor(.gray)
-
-                    CustomPickerButton(
-                        title: "Model Seç",
-                        selectedText: selectedModel
-                    ) {
-                        showModelPicker = true
-                    }
-                }
-                .padding(.horizontal)
-            }
-
-            // PLAKA GİRİŞİ
-            if selectedModel != nil {
-                VStack(alignment: .leading, spacing: 4) {
+    // MARK: - Plaka Giriş
+    private var plateSection: some View {
+        if selectedModel != nil {
+            return AnyView(
+                VStack(alignment: .leading, spacing: 8) {
                     Text("Plaka")
                         .font(CustomFont.medium(size: 14))
                         .foregroundColor(.gray)
 
-                    HStack(spacing: 8) {
-                        Button(action: {
+                    HStack(spacing: 12) {
+                        Button {
                             showCityCodePicker = true
-                        }) {
-                            Text(plateCityCode.isEmpty ? "İl Kodu" : plateCityCode)
+                        } label: {
+                            Text(plateCityCode.isEmpty ? "01-81" : plateCityCode)
                                 .foregroundColor(plateCityCode.isEmpty ? .gray : .primary)
-                                .frame(width: 70, height: 50)
+                                .frame(width: 80, height: 50)
                                 .background(Color.white)
-                                .cornerRadius(12)
-                                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.logo, lineWidth: 1))
+                                .cornerRadius(10)
+                                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.logo))
                         }
 
                         CustomInputField(placeholder: "ABC", text: $plateLetters)
+                            .onChange(of: plateLetters) {
+                                plateLetters = plateLetters.uppercased().filter { $0.isLetter }
+                            }
                             .frame(width: 80)
-                            .textInputAutocapitalization(.characters)
-                            .onChange(of: plateLetters) { plateLetters = plateLetters.uppercased() }
 
                         CustomInputField(placeholder: "1234", text: $plateNumbers)
-                            .frame(width: 100)
                             .keyboardType(.numberPad)
+                            .onChange(of: plateNumbers) {
+                                plateNumbers = plateNumbers.filter { $0.isNumber }
+                            }
+                            .frame(width: 100)
                     }
                 }
-                .padding(.horizontal)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Araç Fotoğrafları")
-                        .font(CustomFont.medium(size: 14))
-                        .foregroundColor(.gray)
-
-                    PhotoUploadView(images: $uploadedPhotos)
-                }
-                .padding(.horizontal)
-            }
-
-            Spacer()
-
-            Button(action: {
-                let newVehicle = Vehicle(
-                    id: UUID(),
-                    brand: vehicleBrands[selectedBrandIndex!].name,
-                    model: selectedModel ?? "",
-                    plate: "\(plateCityCode) \(plateLetters) \(plateNumbers)",
-                    type: .suv,
-                    images: uploadedPhotos,
-                    userId: appState.currentUser?.id ?? UUID(),
-                    lastServices: []
-                )
-                appState.currentUser?.vehicles.append(newVehicle)
-                dismiss()
-            }) {
-                Text("Aracımı Ekle")
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(isFormValid ? Color.logo : Color.gray.opacity(0.5))
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
-                    .padding(.horizontal)
-            }
-            .disabled(!isFormValid)
+            )
         }
-        .navigationBarBackButtonHidden(true) // Mavi "Back" yazısını kaldırıyoruz
-        .sheet(isPresented: $showBrandPicker) {
-            brandPicker
-        }
-        .sheet(isPresented: $showModelPicker) {
-            modelPicker
-        }
-        .sheet(isPresented: $showCityCodePicker) {
-            cityCodePicker
-        }
-        .confirmationDialog(
-            "Girdiğiniz bilgiler silinecektir. Emin misiniz?",
-            isPresented: $showExitConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button("Vazgeç", role: .cancel) { }
-            Button("Sil", role: .destructive) { dismiss() }
+        return AnyView(EmptyView())
+    }
+
+    // MARK: - Fotoğraf Bölümü
+    private var photoUploadSection: some View {
+        VStack(spacing: 16) {
+            PhotoGroupUploadView(title: "Araç Dış Fotoğrafları", selectedImages: $exteriorPhotos)
+            PhotoGroupUploadView(title: "Araç İç Mekan Fotoğrafları", selectedImages: $interiorPhotos)
         }
     }
 
-    // MARKA PICKER
-    private var brandPicker: some View {
-        NavigationStack {
-            Picker("Marka Seç", selection: $selectedBrandIndex) {
-                ForEach(vehicleBrands.indices, id: \.self) { index in
-                    Text(vehicleBrands[index].name).tag(Optional(index))
-                }
-            }
-            .pickerStyle(.wheel)
-            .navigationTitle("Marka Seç")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Tamam") { showBrandPicker = false }
-                }
-            }
-            .presentationDetents([.fraction(0.3)])
+    // MARK: - Kaydet Butonu
+    private var submitButton: some View {
+        Button {
+            saveVehicle()
+        } label: {
+            Text("Aracımı Ekle")
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(isFormValid ? Color.logo : Color.gray.opacity(0.4))
+                .foregroundColor(.white)
+                .cornerRadius(12)
         }
+        .disabled(!isFormValid)
     }
 
-    // MODEL PICKER
-    private var modelPicker: some View {
-        NavigationStack {
-            Picker("Model Seç", selection: $selectedModel) {
-                ForEach(vehicleBrands[selectedBrandIndex!].models, id: \.self) { model in
-                    Text(model).tag(Optional(model))
-                }
-            }
-            .pickerStyle(.wheel)
-            .navigationTitle("Model Seç")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Tamam") { showModelPicker = false }
-                }
-            }
-            .presentationDetents([.fraction(0.3)])
-        }
-    }
-
-    // İL KODU PICKER
+    // MARK: - İl Kodu Picker
     private var cityCodePicker: some View {
         NavigationStack {
             Picker("İl Kodu Seç", selection: $plateCityCode) {
                 ForEach(1...81, id: \.self) { code in
-                    Text("\(code)").tag("\(code)")
+                    Text(code < 10 ? "0\(code)" : "\(code)").tag(code < 10 ? "0\(code)" : "\(code)")
                 }
             }
             .pickerStyle(.wheel)
             .navigationTitle("İl Kodu Seç")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Tamam") { showCityCodePicker = false }
+                    Button("Tamam") {
+                        showCityCodePicker = false
+                    }
                 }
             }
             .presentationDetents([.fraction(0.3)])
         }
     }
 
+    // MARK: - Kayıt Fonksiyonu
+    private func saveVehicle() {
+        guard let brandIndex = selectedBrandIndex else { return }
+
+        let newVehicle = Vehicle(
+            id: UUID(),
+            brand: vehicleBrands[brandIndex].name,
+            model: selectedModel ?? "",
+            plate: "\(plateCityCode) \(plateLetters) \(plateNumbers)",
+            type: .automobile,
+            images: exteriorPhotos + interiorPhotos,
+            userId: appState.currentUser?.id ?? UUID(),
+            lastServices: []
+        )
+
+        appState.currentUser?.vehicles.append(newVehicle)
+        dismiss()
+        onDismiss()
+    }
+
     private func checkBeforeExit() {
-        if hasFilledData() {
+        if selectedBrandIndex != nil || selectedModel != nil || !plateCityCode.isEmpty || !plateLetters.isEmpty || !plateNumbers.isEmpty {
             showExitConfirmation = true
         } else {
             dismiss()
+            onDismiss()
         }
     }
 
-    private func hasFilledData() -> Bool {
-        selectedBrandIndex != nil || selectedModel != nil || !plateCityCode.isEmpty || !plateLetters.isEmpty || !plateNumbers.isEmpty
+    private func isPlateValid() -> Bool {
+        let lettersCount = plateLetters.count
+        let numbersCount = plateNumbers.count
+
+        switch lettersCount {
+        case 1: return numbersCount == 4
+        case 2: return numbersCount == 3 || numbersCount == 4
+        case 3: return numbersCount == 2
+        default: return false
+        }
     }
 }

@@ -2,79 +2,107 @@ import SwiftUI
 
 struct MyVehiclesView: View {
     @EnvironmentObject var appState: AppState
-    @State private var path = NavigationPath()
-    @State private var showAuthSheet = false
+    @State private var showAddVehicle = false
+    @State private var selectedVehicle: Vehicle?
 
     var body: some View {
-        NavigationStack(path: $path) {
-            VStack {
-                Text("Araçlarım")
-                    .font(CustomFont.bold(size: 28))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.leading)
-                    .padding(.top)
+        NavigationStack {
+            VStack(spacing: 0) {
+                headerView
 
                 if !appState.isUserLoggedIn {
-                    VStack(spacing: 12) {
-                        Text("Araçlarınızı görüntüleyebilmek için lütfen giriş yapın.")
-                            .font(CustomFont.regular(size: 14))
-                            .foregroundColor(.gray)
-
-                        Button("Giriş Yap") {
-                            showAuthSheet = true
-                        }
-                        .font(CustomFont.medium(size: 16))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.logo)
-                        .cornerRadius(10)
-                        .padding(.horizontal)
-
-                        Spacer()
-                    }
+                    guestPromptView
+                } else if appState.currentUser?.vehicles.isEmpty ?? true {
+                    noVehicleView
                 } else {
-                    if appState.currentUser?.vehicles.isEmpty ?? true {
-                        EmptyVehicleView {
-                            path.append("addVehicle")
-                        }
-                    } else {
-                        ScrollView {
-                            VStack(spacing: 12) {
-                                ForEach(appState.currentUser?.vehicles ?? []) { vehicle in
-                                    VehicleCardView(vehicle: vehicle)
-                                }
-
-                                EmptyVehicleView {
-                                    path.append("addVehicle")
-                                }
-                            }
-                            .padding(.horizontal)
-                        }
-                    }
+                    vehicleListView
                 }
-            }
-            .navigationDestination(for: String.self) { value in
-                if value == "addVehicle" {
-                    AddVehicleView()
-                }
-            }
-            .sheet(isPresented: $showAuthSheet) {
-                AuthSelectionSheetView(
-                    onLoginSuccess: {
-                        appState.setLoggedInUser()
-                    },
-                    onGuestContinue: {},
-                    hideGuestOption: true
-                )
             }
             .background(Color("BackgroundColor"))
             .ignoresSafeArea(edges: .bottom)
+            .fullScreenCover(isPresented: $showAddVehicle) {
+                AddVehicleView {
+                    showAddVehicle = false
+                }
+            }
+            .navigationDestination(isPresented: Binding<Bool>(
+                get: { selectedVehicle != nil },
+                set: { isActive in
+                    if !isActive {
+                        selectedVehicle = nil
+                    }
+                }
+            )) {
+                if let vehicle = selectedVehicle {
+                    MyVehicleDetailView(vehicle: vehicle)
+                }
+            }
         }
     }
-}
 
-#Preview {
-    MyVehiclesView()
-        .environmentObject(AppState())
+    private var headerView: some View {
+        HStack {
+            Text("Araçlarım")
+                .font(CustomFont.bold(size: 28))
+            Spacer()
+            if appState.isUserLoggedIn {
+                Button {
+                    showAddVehicle = true
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.title3)
+                        .foregroundColor(.primaryText)
+                }
+            }
+        }
+        .padding(.horizontal)
+        .padding(.top)
+    }
+
+    private var guestPromptView: some View {
+        VStack(spacing: 20) {
+            Spacer()
+            Text("Araç ekleyebilmek için önce giriş yapmalısın.")
+                .font(CustomFont.regular(size: 14))
+                .foregroundColor(.gray)
+
+            Button("Giriş Yap") {
+                // Giriş ekranı gösterimi burada olacak
+            }
+            .font(CustomFont.medium(size: 16))
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(Color.logo)
+            .cornerRadius(10)
+            .padding(.horizontal)
+            Spacer()
+        }
+    }
+
+    private var noVehicleView: some View {
+        VStack(spacing: 20) {
+            Spacer()
+            Text("Henüz eklenmiş aracınız yok.")
+                .font(CustomFont.regular(size: 14))
+                .foregroundColor(.gray)
+            Spacer()
+        }
+    }
+
+    private var vehicleListView: some View {
+        ScrollView {
+            VStack(spacing: 16) {
+                ForEach(appState.currentUser?.vehicles ?? []) { vehicle in
+                    Button {
+                        selectedVehicle = vehicle
+                    } label: {
+                        VehicleCardView(vehicle: vehicle)
+                    }
+                }
+            }
+            .padding(.horizontal)
+            .padding(.top)
+        }
+    }
 }
