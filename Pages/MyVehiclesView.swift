@@ -3,6 +3,7 @@ import SwiftUI
 struct MyVehiclesView: View {
     @EnvironmentObject var appState: AppState
     @State private var showAddVehicle = false
+    @State private var showAuthSheet = false
     @State private var selectedVehicle: Vehicle?
 
     var body: some View {
@@ -20,26 +21,46 @@ struct MyVehiclesView: View {
             }
             .background(Color("BackgroundColor"))
             .ignoresSafeArea(edges: .bottom)
+
+            // Add Vehicle Sayfası
             .fullScreenCover(isPresented: $showAddVehicle) {
                 AddVehicleView {
                     showAddVehicle = false
                 }
             }
+
+            // Araç Detay Sayfası
             .navigationDestination(isPresented: Binding<Bool>(
                 get: { selectedVehicle != nil },
                 set: { isActive in
-                    if !isActive {
-                        selectedVehicle = nil
-                    }
+                    if !isActive { selectedVehicle = nil }
                 }
             )) {
                 if let vehicle = selectedVehicle {
                     MyVehicleDetailView(vehicle: vehicle)
                 }
             }
+
+            // Giriş ekranı
+            .sheet(isPresented: $showAuthSheet) {
+                AuthSelectionSheetView(
+                    onLoginSuccess: {
+                        appState.setLoggedInUser()
+                        showAuthSheet = false
+                    },
+                    onGuestContinue: {
+                        appState.setGuestUser()
+                        showAuthSheet = false
+                    },
+                    hideGuestOption: false
+                )
+                .presentationDetents([.fraction(0.55)])
+                .presentationDragIndicator(.visible)
+            }
         }
     }
 
+    // MARK: Header
     private var headerView: some View {
         HStack {
             Text("Araçlarım")
@@ -59,6 +80,7 @@ struct MyVehiclesView: View {
         .padding(.top)
     }
 
+    // MARK: Giriş Yapmamış Ekranı
     private var guestPromptView: some View {
         VStack(spacing: 20) {
             Spacer()
@@ -67,7 +89,7 @@ struct MyVehiclesView: View {
                 .foregroundColor(.gray)
 
             Button("Giriş Yap") {
-                // Giriş ekranı gösterimi burada olacak
+                showAuthSheet = true
             }
             .font(CustomFont.medium(size: 16))
             .foregroundColor(.white)
@@ -80,6 +102,7 @@ struct MyVehiclesView: View {
         }
     }
 
+    // MARK: Araç Yok Ekranı
     private var noVehicleView: some View {
         VStack(spacing: 20) {
             Spacer()
@@ -90,6 +113,7 @@ struct MyVehiclesView: View {
         }
     }
 
+    // MARK: Araç Listesi
     private var vehicleListView: some View {
         ScrollView {
             VStack(spacing: 16) {

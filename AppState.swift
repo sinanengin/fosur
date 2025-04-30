@@ -11,9 +11,11 @@ class AppState: ObservableObject {
         self.isUserLoggedIn = false
         self.currentUser = User(
             id: UUID(),
-            name: "Misafir Kullanıcı",
+            name: "Misafir",
+            surname: "Kullanıcı",
             email: "misafir@fosur.com",
             phoneNumber: "Yok",
+            profileImage: nil,
             vehicles: []
         )
     }
@@ -22,9 +24,11 @@ class AppState: ObservableObject {
         self.isUserLoggedIn = true
         self.currentUser = User(
             id: UUID(),
-            name: "Deneme Kullanıcı",
+            name: "Deneme",
+            surname: "Kullanıcı",
             email: "deneme@fosur.com",
             phoneNumber: "5551234567",
+            profileImage: nil,
             vehicles: []
         )
     }
