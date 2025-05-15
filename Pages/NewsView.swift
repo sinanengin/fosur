@@ -10,16 +10,15 @@ struct NewsView: View {
         case .all:
             return mockNewsData
         case .campaigns:
-            return mockNewsData.filter { $0.type == NewsType.campaign }
+            return mockNewsData.filter { $0.type == .campaign }
         case .announcements:
-            return mockNewsData.filter { $0.type == NewsType.announcement }
+            return mockNewsData.filter { $0.type == .announcement }
         }
     }
 
     var body: some View {
         NavigationStack {
-            VStack(alignment: .leading, spacing: 12) {
-                // Sayfa Başlığı
+            VStack(alignment: .leading, spacing: 16) {
                 Text("Duyurular")
                     .font(CustomFont.bold(size: 28))
                     .padding(.top, 24)
@@ -28,35 +27,27 @@ struct NewsView: View {
                 // Kategori Butonları
                 HStack(spacing: 8) {
                     CategoryButton(title: "Tümü", isSelected: selectedCategory == .all) {
-                        withAnimation {
-                            selectedCategory = .all
-                        }
+                        withAnimation { selectedCategory = .all }
                     }
                     CategoryButton(title: "Kampanyalar", isSelected: selectedCategory == .campaigns) {
-                        withAnimation {
-                            selectedCategory = .campaigns
-                        }
+                        withAnimation { selectedCategory = .campaigns }
                     }
                     CategoryButton(title: "Duyurular", isSelected: selectedCategory == .announcements) {
-                        withAnimation {
-                            selectedCategory = .announcements
-                        }
+                        withAnimation { selectedCategory = .announcements }
                     }
                 }
                 .padding(.horizontal)
 
-                // Kartlar + ScrollView + ScrollViewReader
+                // Scrollable News Cards
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(spacing: 16) {
-                            ForEach(filteredNews, id: \.id) { news in
+                            ForEach(filteredNews) { news in
                                 NewsCardView(news: news)
-                                    .id(news.id)
                                     .onTapGesture {
                                         selectedNews = news
                                         showDetail = true
                                     }
-                                    .transition(.opacity.combined(with: .scale)) // Animasyon
                             }
                         }
                         .padding(.horizontal)
@@ -69,12 +60,10 @@ struct NewsView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showDetail) {
-                if let news = selectedNews {
-                    NewsDetailView(news: news)
-                }
+            .sheet(item: $selectedNews) { news in
+                NewsDetailView(news: news)
             }
-            .background(Color.white) // Arka plan temiz olsun
+            .background(Color.white)
         }
     }
 }

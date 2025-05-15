@@ -4,10 +4,17 @@ struct MyVehiclesView: View {
     @EnvironmentObject var appState: AppState
     @State private var showAddVehicle = false
     @State private var showAuthSheet = false
-    @State private var selectedVehicle: Vehicle?
+    @SceneStorage("MyVehiclesNavigationPath") private var navigationPathData: Data = Data()
+    @State private var navigationPath: [Vehicle] = [] {
+        didSet {
+            if let encoded = try? JSONEncoder().encode(navigationPath) {
+                navigationPathData = encoded
+            }
+        }
+    }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             VStack(spacing: 0) {
                 headerView
 
@@ -30,15 +37,8 @@ struct MyVehiclesView: View {
             }
 
             // Araç Detay Sayfası
-            .navigationDestination(isPresented: Binding<Bool>(
-                get: { selectedVehicle != nil },
-                set: { isActive in
-                    if !isActive { selectedVehicle = nil }
-                }
-            )) {
-                if let vehicle = selectedVehicle {
-                    MyVehicleDetailView(vehicle: vehicle)
-                }
+            .navigationDestination(for: Vehicle.self) { vehicle in
+                MyVehicleDetailView(vehicle: vehicle)
             }
 
             // Giriş ekranı
@@ -56,6 +56,18 @@ struct MyVehiclesView: View {
                 )
                 .presentationDetents([.fraction(0.55)])
                 .presentationDragIndicator(.visible)
+            }
+        }
+        .onAppear {
+            if let decoded = try? JSONDecoder().decode([Vehicle].self, from: navigationPathData) {
+                navigationPath = decoded
+            } else {
+                navigationPath = []
+            }
+        }
+        .onChange(of: appState.tabSelection) {
+            if appState.tabSelection == .vehicles {
+                navigationPath = []
             }
         }
     }
@@ -119,7 +131,7 @@ struct MyVehiclesView: View {
             VStack(spacing: 16) {
                 ForEach(appState.currentUser?.vehicles ?? []) { vehicle in
                     Button {
-                        selectedVehicle = vehicle
+                        navigationPath.append(vehicle)
                     } label: {
                         VehicleCardView(vehicle: vehicle)
                     }

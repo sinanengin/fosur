@@ -1,8 +1,9 @@
-//
-//  Tab.swift
-//  fosur
-//
-//  Created by Sinan Engin Yıldız on 15.05.2025.
-//
+enum Tab: String, CaseIterable, Identifiable, Hashable {
+    case home
+    case vehicles
+    case messages
+    case profile
+    case callUs
 
-import Foundation
+    var id: String { self.rawValue }
+}

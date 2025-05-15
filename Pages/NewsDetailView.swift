@@ -5,12 +5,16 @@ struct NewsDetailView: View {
     @Environment(\.dismiss) var dismiss
 
     var body: some View {
-        VStack(alignment: .leading) {
-            Button(action: { dismiss() }) {
-                Image(systemName: "chevron.left")
-                    .foregroundColor(.gray)
-                    .padding()
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Button(action: { dismiss() }) {
+                    Image(systemName: "chevron.left")
+                        .font(.title2)
+                        .foregroundColor(.gray)
+                }
+                Spacer()
             }
+            .padding(.horizontal)
 
             Image(news.image)
                 .resizable()
@@ -20,7 +24,6 @@ struct NewsDetailView: View {
 
             Text(news.title)
                 .font(CustomFont.bold(size: 24))
-                .padding(.vertical, 8)
 
             Text(news.description)
                 .font(CustomFont.regular(size: 16))
@@ -28,5 +31,7 @@ struct NewsDetailView: View {
             Spacer()
         }
         .padding()
+        .background(Color.white)
+        .navigationBarBackButtonHidden(true)
     }
 }

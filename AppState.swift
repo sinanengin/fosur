@@ -4,6 +4,7 @@ class AppState: ObservableObject {
     @Published var isUserLoggedIn: Bool = false
     @Published var currentUser: User? = nil
 
+    @Published var tabSelection: Tab = .home
     @Published var showAddVehicleView = false // EKLEDİK
     @Published var showAuthSheet = false // Giriş yaparken açılan sheet
 
