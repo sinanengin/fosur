@@ -13,6 +13,7 @@ struct MyVehicleDetailView: View {
             // Geri & Kalem
             HStack {
                 Button(action: {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     dismiss()
                 }) {
                     Image(systemName: "chevron.left")
@@ -24,14 +25,18 @@ struct MyVehicleDetailView: View {
                 Spacer()
 
                 Button(action: {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     showEditConfirmation = true
                 }) {
-                    Image("edit_icon") // PNG dosyası olarak projeye eklenmiş olmalı
+                    Image("edit_icon")
                         .resizable()
+                        .scaledToFit()
                         .frame(width: 20, height: 20)
+                        .padding(6)
                 }
             }
             .padding(.horizontal)
+            .padding(.top, 4)
 
             // Araç Görseli
             Image("temp_car")
@@ -61,9 +66,9 @@ struct MyVehicleDetailView: View {
                     .font(CustomFont.medium(size: 14))
             }
             .padding()
-            .background(Color(.systemGray5))
+            .background(Color(.systemGray6))
             .cornerRadius(12)
-            .shadow(radius: 3)
+            .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 2)
             .padding(.horizontal)
 
             // Fotoğraflar
@@ -88,6 +93,7 @@ struct MyVehicleDetailView: View {
 
             Spacer()
         }
+        .background(Color("BackgroundColor").ignoresSafeArea())
         .navigationBarBackButtonHidden(true)
         .confirmationDialog("Aracınızın bilgilerini güncellemek ister misiniz?", isPresented: $showEditConfirmation, titleVisibility: .visible) {
             Button("Evet") {
@@ -97,7 +103,6 @@ struct MyVehicleDetailView: View {
         }
         .sheet(isPresented: $showEditVehicle) {
             EditVehicleView(vehicle: vehicle) { updatedVehicle in
-                // Güncellenmiş veriyi AppState'e kaydet
                 if let index = appState.currentUser?.vehicles.firstIndex(where: { $0.id == updatedVehicle.id }) {
                     appState.currentUser?.vehicles[index] = updatedVehicle
                 }
@@ -106,9 +111,4 @@ struct MyVehicleDetailView: View {
             .environmentObject(appState)
         }
     }
-}
-
-#Preview {
-    MyVehicleDetailView(vehicle: sampleVehicle)
-        .environmentObject(AppState())
 }

@@ -2,19 +2,9 @@ import SwiftUI
 
 struct MyVehiclesView: View {
     @EnvironmentObject var appState: AppState
-    @State private var showAddVehicle = false
-    @State private var showAuthSheet = false
-    @SceneStorage("MyVehiclesNavigationPath") private var navigationPathData: Data = Data()
-    @State private var navigationPath: [Vehicle] = [] {
-        didSet {
-            if let encoded = try? JSONEncoder().encode(navigationPath) {
-                navigationPathData = encoded
-            }
-        }
-    }
 
     var body: some View {
-        NavigationStack(path: $navigationPath) {
+        NavigationStack(path: $appState.navigationManager.navigationPath) {
             VStack(spacing: 0) {
                 headerView
 
@@ -28,51 +18,32 @@ struct MyVehiclesView: View {
             }
             .background(Color("BackgroundColor"))
             .ignoresSafeArea(edges: .bottom)
-
-            // Add Vehicle Sayfası
-            .fullScreenCover(isPresented: $showAddVehicle) {
+            .fullScreenCover(isPresented: $appState.showAddVehicleView) {
                 AddVehicleView {
-                    showAddVehicle = false
+                    appState.showAddVehicleView = false
                 }
             }
-
-            // Araç Detay Sayfası
-            .navigationDestination(for: Vehicle.self) { vehicle in
-                MyVehicleDetailView(vehicle: vehicle)
-            }
-
-            // Giriş ekranı
-            .sheet(isPresented: $showAuthSheet) {
+            .sheet(isPresented: $appState.showAuthSheet) {
                 AuthSelectionSheetView(
                     onLoginSuccess: {
                         appState.setLoggedInUser()
-                        showAuthSheet = false
+                        appState.showAuthSheet = false
                     },
                     onGuestContinue: {
                         appState.setGuestUser()
-                        showAuthSheet = false
+                        appState.showAuthSheet = false
                     },
                     hideGuestOption: false
                 )
                 .presentationDetents([.fraction(0.55)])
                 .presentationDragIndicator(.visible)
             }
-        }
-        .onAppear {
-            if let decoded = try? JSONDecoder().decode([Vehicle].self, from: navigationPathData) {
-                navigationPath = decoded
-            } else {
-                navigationPath = []
-            }
-        }
-        .onChange(of: appState.tabSelection) {
-            if appState.tabSelection == .vehicles {
-                navigationPath = []
+            .navigationDestination(for: Vehicle.self) { vehicle in
+                MyVehicleDetailView(vehicle: vehicle)
             }
         }
     }
 
-    // MARK: Header
     private var headerView: some View {
         HStack {
             Text("Araçlarım")
@@ -80,7 +51,11 @@ struct MyVehiclesView: View {
             Spacer()
             if appState.isUserLoggedIn {
                 Button {
-                    showAddVehicle = true
+                    print("Butona basıldı!")
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    DispatchQueue.main.async {
+                        appState.showAddVehicleView = true
+                    }
                 } label: {
                     Image(systemName: "plus")
                         .font(.title3)
@@ -92,7 +67,6 @@ struct MyVehiclesView: View {
         .padding(.top)
     }
 
-    // MARK: Giriş Yapmamış Ekranı
     private var guestPromptView: some View {
         VStack(spacing: 20) {
             Spacer()
@@ -101,7 +75,7 @@ struct MyVehiclesView: View {
                 .foregroundColor(.gray)
 
             Button("Giriş Yap") {
-                showAuthSheet = true
+                appState.showAuthSheet = true
             }
             .font(CustomFont.medium(size: 16))
             .foregroundColor(.white)
@@ -110,11 +84,11 @@ struct MyVehiclesView: View {
             .background(Color.logo)
             .cornerRadius(10)
             .padding(.horizontal)
+            .contentShape(Rectangle())
             Spacer()
         }
     }
 
-    // MARK: Araç Yok Ekranı
     private var noVehicleView: some View {
         VStack(spacing: 20) {
             Spacer()
@@ -125,14 +99,11 @@ struct MyVehiclesView: View {
         }
     }
 
-    // MARK: Araç Listesi
     private var vehicleListView: some View {
         ScrollView {
             VStack(spacing: 16) {
                 ForEach(appState.currentUser?.vehicles ?? []) { vehicle in
-                    Button {
-                        navigationPath.append(vehicle)
-                    } label: {
+                    NavigationLink(value: vehicle) {
                         VehicleCardView(vehicle: vehicle)
                     }
                 }
@@ -142,3 +113,4 @@ struct MyVehiclesView: View {
         }
     }
 }
+

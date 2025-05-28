@@ -191,6 +191,7 @@ struct AddVehicleView: View {
     private var cityCodePicker: some View {
         NavigationStack {
             Picker("İl Kodu Seç", selection: $plateCityCode) {
+                Text("Seçiniz").tag("")
                 ForEach(1...81, id: \.self) { code in
                     Text(code < 10 ? "0\(code)" : "\(code)").tag(code < 10 ? "0\(code)" : "\(code)")
                 }

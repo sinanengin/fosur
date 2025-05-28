@@ -21,11 +21,13 @@ struct BrandSelectionView: View {
                 Spacer()
 
                 Text("Markanı Seç")
-                    .font(.title2.bold())
+                    .font(.title.bold())
                     .padding(.trailing)
             }
             .padding(.horizontal)
-            .padding(.top, 40)
+            .padding(.top, 20)
+            .safeAreaInset(edge: .top) { Spacer().frame(height: 0) }
+            .padding(.bottom, 24)
 
             ScrollView {
                 LazyVGrid(columns: columns, spacing: 12) {

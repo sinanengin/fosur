@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct MessagesView: View {
+    @EnvironmentObject var appState: AppState
     @State private var selectedChat: ChatPreview?
     @State private var isShowingDetail = false
 
@@ -18,19 +19,44 @@ struct MessagesView: View {
                     .padding(.horizontal)
                     .padding(.top, 16)
 
-                ScrollView {
-                    VStack(spacing: 12) {
-                        ForEach(messages) { message in
-                            Button {
-                                selectedChat = message
-                                isShowingDetail = true
-                            } label: {
-                                ChatCardView(message: message)
-                            }
-                            .buttonStyle(PlainButtonStyle())
+                if !appState.isUserLoggedIn {
+                    VStack(spacing: 20) {
+                        Spacer()
+                        Text("Mesajlarınızı görebilmek için önce giriş yapmalısınız.")
+                            .font(CustomFont.regular(size: 14))
+                            .foregroundColor(.gray)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+
+                        Button {
+                            appState.showAuthSheet = true
+                        } label: {
+                            Text("Giriş Yap")
+                                .font(CustomFont.medium(size: 16))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.logo)
+                                .cornerRadius(10)
                         }
+                        .padding(.horizontal)
+                        Spacer()
                     }
-                    .padding(.horizontal)
+                } else {
+                    ScrollView {
+                        VStack(spacing: 12) {
+                            ForEach(messages) { message in
+                                Button {
+                                    selectedChat = message
+                                    isShowingDetail = true
+                                } label: {
+                                    ChatCardView(message: message)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
                 }
             }
             .background(Color("BackgroundColor"))
@@ -41,6 +67,21 @@ struct MessagesView: View {
                         isShowingDetail = false
                     }
                 }
+            }
+            .sheet(isPresented: $appState.showAuthSheet) {
+                AuthSelectionSheetView(
+                    onLoginSuccess: {
+                        appState.setLoggedInUser()
+                        appState.showAuthSheet = false
+                    },
+                    onGuestContinue: {
+                        appState.setGuestUser()
+                        appState.showAuthSheet = false
+                    },
+                    hideGuestOption: false
+                )
+                .presentationDetents([.fraction(0.55)])
+                .presentationDragIndicator(.visible)
             }
         }
     }

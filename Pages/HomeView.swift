@@ -1,25 +1,94 @@
 import SwiftUI
 
 struct HomeView: View {
-    @State private var selectedTab: TabItem = .callUs
-
+    @EnvironmentObject var appState: AppState
+    
     var body: some View {
-        VStack {
-            Spacer()
-
-            TabView(selection: $selectedTab) {
-                NewsView().tag(TabItem.campaigns)
-                MyVehiclesView().tag(TabItem.myVehicles)
-                CallUsView().tag(TabItem.callUs)
-                MessagesView().tag(TabItem.messages)
-                ProfileView().tag(TabItem.profile)
+        NavigationStack(path: $appState.navigationManager.navigationPath) {
+            TabView(selection: $appState.tabSelection) {
+                NewsView()
+                    .tabItem {
+                        Label("Haberler", systemImage: "newspaper")
+                    }
+                    .tag(TabItem.news)
+                
+                MyVehiclesView()
+                    .tabItem {
+                        Label("Araçlarım", systemImage: "car")
+                    }
+                    .tag(TabItem.myVehicles)
+                
+                CallUsView()
+                    .tabItem {
+                        Label("Bizi Çağır", systemImage: "phone")
+                    }
+                    .tag(TabItem.callUs)
+                
+                MessagesView()
+                    .tabItem {
+                        Label("Mesajlar", systemImage: "message")
+                    }
+                    .tag(TabItem.messages)
+                
+                ProfileView()
+                    .tabItem {
+                        Label("Profil", systemImage: "person")
+                    }
+                    .tag(TabItem.profile)
             }
-            .tabViewStyle(.page(indexDisplayMode: .never)) // Sayfa geçiş efekti için
-
-            CustomTabBarView(selectedTab: $selectedTab)
+            .sheet(item: $appState.navigationManager.presentedSheet) { destination in
+                switch destination {
+                case .auth:
+                    AuthSelectionSheetView(
+                        onLoginSuccess: {
+                            appState.setLoggedInUser()
+                            appState.navigationManager.dismissSheet()
+                        },
+                        onGuestContinue: {
+                            appState.setGuestUser()
+                            appState.navigationManager.dismissSheet()
+                        },
+                        hideGuestOption: false
+                    )
+                case .terms:
+                    TermsOfServiceView()
+                case .privacy:
+                    PrivacyPolicyView()
+                case .cityCodePicker:
+                    CityCodePickerView(selectedCityCode: $appState.navigationManager.selectedCityCode)
+                }
+            }
+            .fullScreenCover(item: $appState.navigationManager.presentedFullScreenCover) { destination in
+                switch destination {
+                case .brandSelection:
+                    BrandSelectionView(
+                        brands: vehicleBrands,
+                        onSelect: { index in
+                            appState.navigationManager.dismissFullScreen()
+                        }
+                    )
+                case .modelSelection:
+                    if let selectedBrand = appState.navigationManager.selectedBrand {
+                        ModelSelectionView(
+                            brand: selectedBrand,
+                            onSelect: { model in
+                                appState.navigationManager.dismissFullScreen()
+                            }
+                        )
+                    }
+                case .addVehicle:
+                    AddVehicleView {
+                        appState.navigationManager.dismissFullScreen()
+                    }
+                case .editVehicle:
+                    if let vehicle = appState.navigationManager.selectedVehicle {
+                        EditVehicleView(vehicle: vehicle) { updatedVehicle in
+                            appState.navigationManager.dismissFullScreen()
+                        }
+                    }
+                }
+            }
         }
-        .ignoresSafeArea(edges: .bottom) // TabBar'ı ekrana yapışık yapalım
-        .background(Color("BackgroundColor"))
     }
 }
 

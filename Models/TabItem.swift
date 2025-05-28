@@ -1,17 +1,19 @@
+import SwiftUI
+
 enum TabItem: String, CaseIterable {
-    case campaigns = "Duyurular"
+    case news = "Haberler"
     case myVehicles = "Araçlarım"
-    case callUs = "Bizi Çağır!"
+    case callUs = "Bizi Çağır"
     case messages = "Mesajlar"
     case profile = "Profil"
 
     var iconName: String {
         switch self {
-        case .campaigns: return "newsIcon"
-        case .myVehicles: return "carIcon"
-        case .callUs: return "glareIcon"
-        case .messages: return "messagesIcon"
-        case .profile: return "profileIcon"
+        case .news: return "newspaper"
+        case .myVehicles: return "car"
+        case .callUs: return "phone"
+        case .messages: return "message"
+        case .profile: return "person"
         }
     }
 }

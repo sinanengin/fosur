@@ -6,6 +6,8 @@ struct AuthSelectionSheetView: View {
     var hideGuestOption: Bool
 
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var appState: AppState
+    @State private var showPhoneLogin = false
 
     var body: some View {
         VStack(spacing: 16) {
@@ -29,7 +31,7 @@ struct AuthSelectionSheetView: View {
                     handleLoginSuccess()
                 }
                 AuthButton(title: "Telefon ile devam et", imageName: "phone.fill", isSystemImage: true) {
-                    handleLoginSuccess()
+                    showPhoneLogin = true
                 }
             }
             .padding(.horizontal, 24)
@@ -50,6 +52,10 @@ struct AuthSelectionSheetView: View {
         }
         .padding(.top, 8)
         .background(Color("BackgroundColor"))
+        .sheet(isPresented: $showPhoneLogin) {
+            PhoneLoginView()
+                .environmentObject(appState)
+        }
     }
 
     private func handleLoginSuccess() {
