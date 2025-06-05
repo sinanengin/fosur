@@ -33,6 +33,10 @@ struct MyVehiclesView: View {
                         appState.setGuestUser()
                         appState.showAuthSheet = false
                     },
+                    onPhoneLogin: {
+                        // Artık NavigationManager sistemi kullanıyoruz
+                        // Bu callback artık kullanılmayacak
+                    },
                     hideGuestOption: false
                 )
                 .presentationDetents([.fraction(0.55)])

@@ -3,11 +3,12 @@ import SwiftUI
 struct AuthSelectionSheetView: View {
     var onLoginSuccess: () -> Void
     var onGuestContinue: () -> Void
+    var onPhoneLogin: () -> Void
     var hideGuestOption: Bool
 
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var appState: AppState
-    @State private var showPhoneLogin = false
+    @State private var isProcessing = false // Çoklu tıklama koruması
 
     var body: some View {
         VStack(spacing: 16) {
@@ -25,16 +26,17 @@ struct AuthSelectionSheetView: View {
 
             VStack(spacing: 12) {
                 AuthButton(title: "Apple ile devam et", imageName: "applelogo", isSystemImage: false) {
-                    handleLoginSuccess()
+                    handleAppleLogin()
                 }
                 AuthButton(title: "Google ile devam et", imageName: "googlelogo", isSystemImage: false) {
-                    handleLoginSuccess()
+                    handleGoogleLogin()
                 }
                 AuthButton(title: "Telefon ile devam et", imageName: "phone.fill", isSystemImage: true) {
-                    showPhoneLogin = true
+                    handlePhoneLogin()
                 }
             }
             .padding(.horizontal, 24)
+            .disabled(isProcessing) // İşlem sırasında butonları devre dışı bırak
 
             if !hideGuestOption {
                 DividerWithOr()
@@ -46,15 +48,61 @@ struct AuthSelectionSheetView: View {
                         .font(.subheadline)
                         .foregroundColor(.gray)
                 }
+                .disabled(isProcessing)
             }
 
             Spacer()
         }
         .padding(.top, 8)
         .background(Color("BackgroundColor"))
-        .sheet(isPresented: $showPhoneLogin) {
-            PhoneLoginView()
-                .environmentObject(appState)
+    }
+
+    private func handleAppleLogin() {
+        guard !isProcessing else { return }
+        isProcessing = true
+        
+        print("Apple ile devam et tıklandı")
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            handleLoginSuccess()
+            isProcessing = false
+        }
+    }
+    
+    private func handleGoogleLogin() {
+        guard !isProcessing else { return }
+        isProcessing = true
+        
+        print("Google ile devam et tıklandı")
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            handleLoginSuccess()
+            isProcessing = false
+        }
+    }
+    
+    private func handlePhoneLogin() {
+        guard !isProcessing else { 
+            print("⚠️ handlePhoneLogin: Zaten işleniyor, çıkıyor...")
+            return 
+        }
+        
+        isProcessing = true
+        print("📱 Telefon ile devam et tıklandı - handlePhoneLogin başladı")
+        
+        // Önce misafir olarak giriş yap
+        onGuestContinue()
+        
+        // Sheet'i kapat ve telefon giriş ekranını aç
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            self.dismiss()
+            
+            // Sheet tamamen kapandıktan sonra telefon giriş ekranını aç
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                self.appState.navigationManager.presentFullScreen(.phoneLogin)
+                self.isProcessing = false
+                print("📱 handlePhoneLogin tamamlandı, isProcessing = false")
+            }
         }
     }
 
@@ -64,7 +112,13 @@ struct AuthSelectionSheetView: View {
     }
 
     private func handleGuestContinue() {
-        onGuestContinue()
-        dismiss()
+        guard !isProcessing else { return }
+        isProcessing = true
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            onGuestContinue()
+            dismiss()
+            isProcessing = false
+        }
     }
 }

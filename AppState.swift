@@ -7,6 +7,7 @@ class AppState: ObservableObject {
     @Published var tabSelection: TabItem = .callUs
     @Published var showAddVehicleView = false // EKLEDİK
     @Published var showAuthSheet = false // Giriş yaparken açılan sheet
+    @Published var isFromOnboarding = false // Onboarding'den gelip gelmediğini takip eder
 
     func setGuestUser() {
         self.isUserLoggedIn = false

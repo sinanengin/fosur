@@ -1,197 +1,605 @@
 import SwiftUI
+import CoreLocation
+import WeatherKit
+
+// MARK: - Models
+struct Address: Identifiable, Codable, Equatable {
+    let id: String
+    let title: String
+    let fullAddress: String
+    let latitude: Double
+    let longitude: Double
+    
+    static func == (lhs: Address, rhs: Address) -> Bool {
+        lhs.id == rhs.id
+    }
+}
+
+struct Service: Identifiable, Codable, Hashable {
+    let id: String
+    let title: String
+    let description: String
+    let price: Double
+    let category: ServiceCategory
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+    
+    static func == (lhs: Service, rhs: Service) -> Bool {
+        lhs.id == rhs.id
+    }
+}
+
+enum ServiceCategory: String, Codable, Hashable, CaseIterable {
+    case interiorCleaning = "İç Temizlik"
+    case exteriorCleaning = "Dış Temizlik"
+    case polish = "Pasta Cila"
+}
+
+// MARK: - Services
+class AddressService {
+    static let shared = AddressService()
+    
+    // Örnek adresler
+    private var addresses: [Address] = [
+        Address(id: "1", title: "Ev", fullAddress: "Atatürk Mah. Cumhuriyet Cad. No:123 D:4 Kadıköy/İstanbul", latitude: 40.9909, longitude: 29.0233),
+        Address(id: "2", title: "İş", fullAddress: "Levent Mah. Teknoloji Cad. No:45 D:12 Beşiktaş/İstanbul", latitude: 41.0820, longitude: 29.0163)
+    ]
+    
+    func getAddresses() async throws -> [Address] {
+        // Simüle edilmiş API çağrısı
+        try await Task.sleep(nanoseconds: 500_000_000) // 0.5 saniye bekle
+        return addresses
+    }
+    
+    func addAddress(_ address: Address) {
+        addresses.append(address)
+    }
+    
+    func deleteAddress(id: String) {
+        addresses.removeAll { $0.id == id }
+    }
+}
+
+class ServiceService {
+    static let shared = ServiceService()
+    
+    // Örnek hizmetler
+    private let sampleServices: [Service] = [
+        Service(id: "1", title: "İç Temizlik", description: "Detaylı iç temizlik hizmeti", price: 299.99, category: .interiorCleaning),
+        Service(id: "2", title: "Dış Temizlik", description: "Detaylı dış temizlik hizmeti", price: 199.99, category: .exteriorCleaning),
+        Service(id: "3", title: "Pasta Cila", description: "Profesyonel pasta cila hizmeti", price: 499.99, category: .polish)
+    ]
+    
+    func getServices() async throws -> [Service] {
+        // Simüle edilmiş API çağrısı
+        try await Task.sleep(nanoseconds: 500_000_000) // 0.5 saniye bekle
+        return sampleServices
+    }
+}
 
 struct CallUsView: View {
     @EnvironmentObject var appState: AppState
-    @Environment(\.dismiss) var dismiss
     @State private var selectedVehicleIndex = 0
-    @State private var showVehicleDetail = false
-
-    var user: User {
-        appState.currentUser ?? User(
-            id: UUID(),
-            name: "Sinan",
-            surname: "Yıldız",
-            email: "",
-            phoneNumber: "",
-            profileImage: nil,
-            vehicles: [
-                Vehicle(
-                    id: UUID(),
-                    brand: "BMW",
-                    model: "320i",
-                    plate: "34 ABC 123",
-                    type: .automobile,
-                    images: [UIImage(named: "temp_car") ?? UIImage()],
-                    userId: UUID(),
-                    lastServices: []
-                ),
-                Vehicle(
-                    id: UUID(),
-                    brand: "Mercedes",
-                    model: "C200",
-                    plate: "34 XYZ 456",
-                    type: .automobile,
-                    images: [UIImage(named: "temp_car") ?? UIImage()],
-                    userId: UUID(),
-                    lastServices: []
-                ),
-                Vehicle(
-                    id: UUID(),
-                    brand: "Renault",
-                    model: "Clio",
-                    plate: "06 DEF 789",
-                    type: .automobile,
-                    images: [UIImage(named: "temp_car") ?? UIImage()],
-                    userId: UUID(),
-                    lastServices: []
-                )
-            ]
-        )
-    }
-
-    var greeting: String {
+    @State private var selectedAddress: Address?
+    @State private var selectedServices: Set<Service> = []
+    @State private var showAddressSheet = false
+    @State private var showServiceSheet = false
+    @State private var showLoginSheet = false
+    @State private var addresses: [Address] = []
+    @State private var services: [Service] = []
+    @State private var isLoading = true
+    
+    private var greeting: String {
         let hour = Calendar.current.component(.hour, from: Date())
         switch hour {
-        case 6..<12: return "Günaydın, \(user.name)"
-        case 12..<18: return "İyi günler, \(user.name)"
-        case 18..<22: return "İyi akşamlar, \(user.name)"
-        default: return "İyi geceler, \(user.name)"
+        case 6..<12:
+            return "Günaydın"
+        case 12..<18:
+            return "İyi Günler"
+        default:
+            return "İyi Akşamlar"
         }
     }
-
-    // Araç sayısı değişirse index'i sıfırla
-    private func safeSelectedIndex(for vehicles: [Vehicle]) -> Int {
-        guard !vehicles.isEmpty else { return 0 }
-        return min(selectedVehicleIndex, vehicles.count - 1)
-    }
-
+    
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                // Selamlama (geri tuşu olmadan)
-                HStack(alignment: .center) {
-                    Text(greeting)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                if let user = appState.currentUser {
+                    Text("\(greeting), \(user.name)")
                         .font(CustomFont.bold(size: 26))
-                        .foregroundColor(.primary)
-                        .padding(.leading, 8)
-                    Spacer()
+                        .padding(.horizontal)
+                        .padding(.top, 16)
                 }
-                .padding(.top, 24)
-                .padding(.bottom, 8)
-
-                // Araç Galerisi (Slider)
-                if !user.vehicles.isEmpty {
-                    VStack(spacing: 10) {
-                        TabView(selection: $selectedVehicleIndex) {
-                            ForEach(user.vehicles.indices, id: \ .self) { idx in
-                                let vehicle = user.vehicles[idx]
-                                VStack(spacing: 8) {
-                                    if let uiImage = vehicle.images.first {
-                                        Image(uiImage: uiImage)
-                                            .resizable()
-                                            .scaledToFit()
-                                            .frame(height: UIScreen.main.bounds.height * 0.18)
-                                            .cornerRadius(14)
-                                            .shadow(radius: 4)
-                                            .onTapGesture {
-                                                selectedVehicleIndex = idx
-                                                showVehicleDetail = true
-                                            }
-                                    } else {
-                                        Image("temp_car")
-                                            .resizable()
-                                            .scaledToFit()
-                                            .frame(height: UIScreen.main.bounds.height * 0.18)
-                                            .cornerRadius(14)
-                                            .shadow(radius: 4)
-                                            .onTapGesture {
-                                                selectedVehicleIndex = idx
-                                                showVehicleDetail = true
-                                            }
-                                    }
-                                    // Araç Bilgi Kartı
-                                    HStack(spacing: 14) {
-                                        Image("car_logo_placeholder")
-                                            .resizable()
-                                            .frame(width: 40, height: 40)
-                                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            Text(vehicle.brand)
-                                                .font(CustomFont.bold(size: 16))
-                                            Text(vehicle.model)
-                                                .font(CustomFont.regular(size: 14))
-                                                .foregroundColor(.gray)
-                                        }
-                                        Spacer()
-                                        Text(vehicle.plate)
-                                            .font(CustomFont.medium(size: 15))
-                                            .foregroundColor(.secondary)
-                                    }
-                                    .padding(.vertical, 10)
-                                    .padding(.horizontal, 16)
-                                    .background(Color(.systemGray6))
-                                    .cornerRadius(16)
-                                    .shadow(color: Color.black.opacity(0.04), radius: 2, x: 0, y: 2)
-                                }
-                                .padding(.horizontal, 24)
-                                .tag(idx)
-                            }
+                
+                VStack(spacing: 24) {
+                    if !appState.isUserLoggedIn {
+                        guestPromptView
+                    } else {
+                        // Araç Seçici
+                        if let vehicles = appState.currentUser?.vehicles, !vehicles.isEmpty {
+                            VehicleCarousel(
+                                vehicles: vehicles,
+                                selectedIndex: $selectedVehicleIndex,
+                                onVehicleChange: handleVehicleChange
+                            )
+                            .padding(.horizontal)
                         }
-                        .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-                        .frame(height: UIScreen.main.bounds.height * 0.28)
-                        .animation(.easeInOut, value: selectedVehicleIndex)
-                        // Dots göstergesi
-                        if user.vehicles.count > 1 {
-                            HStack(spacing: 8) {
-                                ForEach(user.vehicles.indices, id: \ .self) { idx in
-                                    Circle()
-                                        .fill(idx == selectedVehicleIndex ? Color.logo : Color.gray.opacity(0.3))
-                                        .frame(width: 8, height: 8)
-                                }
-                            }
-                            .padding(.top, 2)
+                        
+                        // Hizmet ve Adres Kartları
+                        VStack(spacing: 16) {
+                            // Adres Kartı
+                            AddressCard(
+                                address: selectedAddress,
+                                onTap: { showAddressSheet = true }
+                            )
+                            
+                            // Hizmet Kartı
+                            ServiceCard(
+                                services: Array(selectedServices),
+                                onTap: { showServiceSheet = true }
+                            )
                         }
+                        .padding(.horizontal)
+                        
+                        // Devam Et Butonu
+                        Button(action: handleContinue) {
+                            HStack {
+                                Text("Devam Et")
+                                    .font(CustomFont.bold(size: 18))
+                                
+                                Image(systemName: "arrow.right")
+                                    .font(.system(size: 16, weight: .bold))
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 18)
+                            .background(isFormValid ? Color.logo : Color.gray.opacity(0.4))
+                            .cornerRadius(16)
+                            .shadow(color: isFormValid ? Color.logo.opacity(0.3) : Color.clear, radius: 8, x: 0, y: 4)
+                        }
+                        .disabled(!isFormValid)
+                        .padding(.horizontal)
+                        .padding(.top, 8)
                     }
-                    .onChange(of: user.vehicles.count) { oldValue, newValue in
-                        selectedVehicleIndex = safeSelectedIndex(for: user.vehicles)
-                    }
-                } else {
-                    VStack(spacing: 12) {
-                        Text("Henüz araç eklemediniz.")
-                            .font(CustomFont.regular(size: 16))
-                            .foregroundColor(.gray)
-                    }
-                    .padding(.horizontal, 24)
-                    .frame(height: UIScreen.main.bounds.height * 0.18)
                 }
-
-                Spacer()
-
-                // Bizi Çağır Butonu
-                Button(action: {
-                    // Çağırma işlemi
-                }) {
-                    Text("Bizi Çağır")
-                        .font(CustomFont.bold(size: 20))
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.logo)
-                        .foregroundColor(.white)
-                        .cornerRadius(14)
-                        .padding(.horizontal, 24)
-                }
-                .padding(.bottom, 32)
             }
-            .background(Color("BackgroundColor").ignoresSafeArea())
-            .navigationDestination(isPresented: $showVehicleDetail) {
-                // Güvenli araç erişimi
-                if !user.vehicles.isEmpty && safeSelectedIndex(for: user.vehicles) < user.vehicles.count {
-                    MyVehicleDetailView(vehicle: user.vehicles[safeSelectedIndex(for: user.vehicles)])
-                } else {
-                    Text("Araç bulunamadı")
+            .padding(.vertical)
+        }
+        .background(Color("BackgroundColor"))
+        .sheet(isPresented: $showAddressSheet) {
+            AddressSelectionView(
+                selectedAddress: $selectedAddress,
+                addresses: addresses
+            )
+        }
+        .sheet(isPresented: $showServiceSheet) {
+            ServiceSelectionView(
+                selectedServices: $selectedServices,
+                services: services
+            )
+        }
+        .sheet(isPresented: $showLoginSheet) {
+            AuthSelectionSheetView(
+                onLoginSuccess: {
+                    appState.setLoggedInUser()
+                    showLoginSheet = false
+                },
+                onGuestContinue: {
+                    appState.setGuestUser()
+                    showLoginSheet = false
+                },
+                onPhoneLogin: {
+                    // NavigationManager sistemi kullanılıyor
+                },
+                hideGuestOption: false
+            )
+            .presentationDetents([.fraction(0.55)])
+            .presentationDragIndicator(.visible)
+        }
+        .onAppear {
+            Task {
+                await loadData()
+            }
+        }
+        .onChange(of: selectedAddress) { _, address in
+            // Adres seçildiğinde yapılacak işlemler
+        }
+        .onChange(of: selectedVehicleIndex) { _, index in
+            // Araç seçildiğinde yapılacak işlemler
+        }
+    }
+    
+    private var guestPromptView: some View {
+        VStack(spacing: 20) {
+            Spacer()
+            Text("Hizmetlerimizden yararlanabilmek için giriş yapmalısınız.")
+                .font(CustomFont.regular(size: 14))
+                .foregroundColor(.gray)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 24)
+            
+            Button("Giriş Yap") {
+                showLoginSheet = true
+            }
+            .font(CustomFont.medium(size: 16))
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(Color.logo)
+            .cornerRadius(10)
+            .padding(.horizontal, 40)
+            Spacer()
+        }
+    }
+    
+    private var isFormValid: Bool {
+        selectedAddress != nil && !selectedServices.isEmpty
+    }
+    
+    private func handleVehicleChange() {
+        selectedAddress = nil
+        selectedServices.removeAll()
+    }
+    
+    private func handleContinue() {
+        guard let _ = selectedAddress,
+              !selectedServices.isEmpty,
+              let _ = appState.currentUser?.vehicles[selectedVehicleIndex] else {
+            return
+        }
+        
+        print("Sipariş oluşturuluyor...")
+    }
+    
+    private func loadData() async {
+        isLoading = true
+        do {
+            async let addressesTask = AddressService.shared.getAddresses()
+            async let servicesTask = ServiceService.shared.getServices()
+            
+            let (fetchedAddresses, fetchedServices) = try await (addressesTask, servicesTask)
+            
+            await MainActor.run {
+                self.addresses = fetchedAddresses
+                self.services = fetchedServices
+                self.isLoading = false
+            }
+        } catch {
+            print("Veri yüklenirken hata oluştu: \(error)")
+            await MainActor.run {
+                self.isLoading = false
+            }
+        }
+    }
+}
+
+// MARK: - Weather Card
+struct WeatherCard: View {
+    let weather: Weather
+    
+    var body: some View {
+        HStack(spacing: 20) {
+            // Hava Durumu İkonu
+            Image(systemName: weather.currentWeather.symbolName)
+                .font(.system(size: 40))
+                .foregroundColor(.logo)
+            
+            VStack(alignment: .leading, spacing: 8) {
+                Text(weather.currentWeather.condition.description)
+                    .font(CustomFont.medium(size: 18))
+                    .foregroundColor(.primary)
+                
+                HStack(spacing: 16) {
+                    Text("\(Int(weather.currentWeather.temperature.value))°C")
+                        .font(CustomFont.bold(size: 28))
+                        .foregroundColor(.primary)
+                    
+                    Text("Nem: %\(Int(weather.currentWeather.humidity * 100))")
+                        .font(CustomFont.regular(size: 14))
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            Spacer()
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 20)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.white)
+                .shadow(color: Color.black.opacity(0.08), radius: 15, x: 0, y: 8)
+        )
+    }
+}
+
+// MARK: - Vehicle Carousel
+struct VehicleCarousel: View {
+    let vehicles: [Vehicle]
+    @Binding var selectedIndex: Int
+    let onVehicleChange: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            TabView(selection: $selectedIndex) {
+                ForEach(Array(vehicles.enumerated()), id: \.element.id) { index, vehicle in
+                    VehicleCard(vehicle: vehicle)
+                        .tag(index)
+                }
+            }
+            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+            .frame(height: 160)
+            .background(
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(Color.white)
+                    .shadow(color: Color.black.opacity(0.08), radius: 15, x: 0, y: 8)
+            )
+            
+            // Sayfa göstergesi
+            HStack(spacing: 8) {
+                ForEach(0..<vehicles.count, id: \.self) { index in
+                    Circle()
+                        .fill(index == selectedIndex ? Color.logo : Color.gray.opacity(0.3))
+                        .frame(width: 8, height: 8)
                 }
             }
         }
+    }
+}
+
+// MARK: - Vehicle Card
+struct VehicleCard: View {
+    let vehicle: Vehicle
+    
+    var body: some View {
+        HStack(spacing: 16) {
+            // Sol taraf - Araç Görseli
+            if let uiImage = vehicle.images.first {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 120, height: 120)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+            } else {
+                Image("temp_car")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 120, height: 120)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+            }
+            
+            // Sağ taraf - Araç Bilgileri
+            VStack(alignment: .leading, spacing: 12) {
+                // Marka ve Model
+                Text("\(vehicle.brand) \(vehicle.model)")
+                    .font(CustomFont.bold(size: 18))
+                    .foregroundColor(.primary)
+                
+                // Plaka
+                Text(vehicle.plate)
+                    .font(CustomFont.medium(size: 16))
+                    .foregroundColor(.secondary)
+                
+                // Araç Logosu ve Son Sipariş
+                HStack(spacing: 8) {
+                    Image(systemName: "car.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(.logo)
+                    
+                    Text("Son Sipariş: 15 Mart 2024")
+                        .font(CustomFont.regular(size: 14))
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            Spacer()
+            
+            // Sağ üst köşe - Ok işareti
+            Image(systemName: "chevron.right")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.gray)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(Color.white)
+        )
+    }
+}
+
+// MARK: - Address Card
+struct AddressCard: View {
+    let address: Address?
+    let onTap: () -> Void
+    
+    var body: some View {
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    Image(systemName: "mappin.circle.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(.logo)
+                    
+                    Text("Adres")
+                        .font(CustomFont.bold(size: 18))
+                        .foregroundColor(.primary)
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.gray)
+                }
+                
+                if let address = address {
+                    Text(address.title)
+                        .font(CustomFont.medium(size: 16))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                    
+                    Text(address.fullAddress)
+                        .font(CustomFont.regular(size: 14))
+                        .foregroundColor(.secondary)
+                        .lineLimit(2)
+                } else {
+                    Text("Adres Seçin")
+                        .font(CustomFont.regular(size: 16))
+                        .foregroundColor(.secondary)
+                }
+            }
+            .padding(20)
+            .frame(maxWidth: .infinity)
+            .frame(height: 120)
+            .background(
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(Color.white)
+                    .shadow(color: Color.black.opacity(0.08), radius: 15, x: 0, y: 8)
+            )
+        }
+    }
+}
+
+// MARK: - Service Card
+struct ServiceCard: View {
+    let services: [Service]
+    let onTap: () -> Void
+    
+    private var totalPrice: Double {
+        services.reduce(0) { $0 + $1.price }
+    }
+    
+    var body: some View {
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    Image(systemName: "wrench.and.screwdriver.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(.logo)
+                    
+                    Text("Hizmet")
+                        .font(CustomFont.bold(size: 18))
+                        .foregroundColor(.primary)
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.gray)
+                }
+                
+                if !services.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(services.prefix(2)) { service in
+                            HStack {
+                                Text(service.title)
+                                    .font(CustomFont.medium(size: 16))
+                                    .foregroundColor(.primary)
+                                
+                                Spacer()
+                                
+                                Text(String(format: "%.2f ₺", service.price))
+                                    .font(CustomFont.bold(size: 16))
+                                    .foregroundColor(.logo)
+                            }
+                        }
+                        
+                        if services.count > 2 {
+                            Text("+ \(services.count - 2) hizmet daha")
+                                .font(CustomFont.regular(size: 14))
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Divider()
+                        
+                        HStack {
+                            Text("Toplam Tutar")
+                                .font(CustomFont.medium(size: 16))
+                                .foregroundColor(.primary)
+                            
+                            Spacer()
+                            
+                            Text(String(format: "%.2f ₺", totalPrice))
+                                .font(CustomFont.bold(size: 18))
+                                .foregroundColor(.logo)
+                        }
+                    }
+                } else {
+                    Text("Hizmet Seçin")
+                        .font(CustomFont.regular(size: 16))
+                        .foregroundColor(.secondary)
+                }
+            }
+            .padding(20)
+            .frame(maxWidth: .infinity)
+            .frame(height: 120)
+            .background(
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(Color.white)
+                    .shadow(color: Color.black.opacity(0.08), radius: 15, x: 0, y: 8)
+            )
+        }
+    }
+}
+
+// MARK: - Location Manager
+class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
+    private let manager = CLLocationManager()
+    @Published var location: CLLocation?
+    
+    override init() {
+        super.init()
+        manager.delegate = self
+        manager.desiredAccuracy = kCLLocationAccuracyBest
+        manager.requestWhenInUseAuthorization()
+        manager.startUpdatingLocation()
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        location = locations.last
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        print("Konum hatası: \(error.localizedDescription)")
+    }
+}
+
+// MARK: - Weather Card Placeholder
+struct WeatherCardPlaceholder: View {
+    var body: some View {
+        HStack(spacing: 20) {
+            Image(systemName: "cloud")
+                .font(.system(size: 40))
+                .foregroundColor(.gray)
+            
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Hava durumu yükleniyor...")
+                    .font(CustomFont.medium(size: 18))
+                    .foregroundColor(.gray)
+                
+                HStack(spacing: 16) {
+                    Text("--°C")
+                        .font(CustomFont.bold(size: 28))
+                        .foregroundColor(.gray)
+                    
+                    Text("Nem: --%")
+                        .font(CustomFont.regular(size: 14))
+                        .foregroundColor(.gray)
+                }
+            }
+            
+            Spacer()
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 20)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.white)
+                .shadow(color: Color.black.opacity(0.08), radius: 15, x: 0, y: 8)
+        )
     }
 }
 

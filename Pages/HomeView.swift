@@ -2,7 +2,7 @@ import SwiftUI
 
 struct HomeView: View {
     @EnvironmentObject var appState: AppState
-    
+
     var body: some View {
         NavigationStack(path: $appState.navigationManager.navigationPath) {
             TabView(selection: $appState.tabSelection) {
@@ -48,6 +48,10 @@ struct HomeView: View {
                             appState.setGuestUser()
                             appState.navigationManager.dismissSheet()
                         },
+                        onPhoneLogin: {
+                            // Artık NavigationManager sistemi kullanıyoruz
+                            // Bu callback artık kullanılmayacak
+                        },
                         hideGuestOption: false
                     )
                 case .terms:
@@ -57,6 +61,9 @@ struct HomeView: View {
                 case .cityCodePicker:
                     CityCodePickerView(selectedCityCode: $appState.navigationManager.selectedCityCode)
                 }
+            }
+            .navigationDestination(for: Vehicle.self) { vehicle in
+                MyVehicleDetailView(vehicle: vehicle)
             }
             .fullScreenCover(item: $appState.navigationManager.presentedFullScreenCover) { destination in
                 switch destination {
@@ -86,6 +93,10 @@ struct HomeView: View {
                             appState.navigationManager.dismissFullScreen()
                         }
                     }
+                case .phoneLogin:
+                    PhoneLoginView()
+                        .environmentObject(appState)
+                        .interactiveDismissDisabled()
                 }
             }
         }

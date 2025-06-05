@@ -36,7 +36,7 @@ struct AddVehicleView: View {
                     modelSection
                     plateSection
                     if selectedModel != nil {
-                        photoUploadSection
+                        photoSection
                         submitButton
                     }
                 }
@@ -45,24 +45,11 @@ struct AddVehicleView: View {
             .background(Color("BackgroundColor"))
             .navigationBarBackButtonHidden(true)
             .fullScreenCover(isPresented: $showBrandSheet) {
-                BrandSelectionView(
-                    brands: vehicleBrands,
-                    onSelect: { index in
-                        selectedBrandIndex = index
-                        selectedModel = nil
-                        showBrandSheet = false
-                    }
-                )
+                brandSelectionView
             }
             .fullScreenCover(isPresented: $showModelSheet) {
                 if let brandIndex = selectedBrandIndex {
-                    ModelSelectionView(
-                        brand: vehicleBrands[brandIndex],
-                        onSelect: { model in
-                            selectedModel = model
-                            showModelSheet = false
-                        }
-                    )
+                    modelSelectionView
                 }
             }
             .sheet(isPresented: $showCityCodePicker) {
@@ -165,10 +152,19 @@ struct AddVehicleView: View {
     }
 
     // MARK: - Fotoğraf Bölümü
-    private var photoUploadSection: some View {
+    private var photoSection: some View {
         VStack(spacing: 16) {
-            PhotoGroupUploadView(title: "Araç Dış Fotoğrafları", selectedImages: $exteriorPhotos)
-            PhotoGroupUploadView(title: "Araç İç Mekan Fotoğrafları", selectedImages: $interiorPhotos)
+            PhotoGroupUploadView(
+                title: "Araç Dış Fotoğrafları",
+                selectedImages: $exteriorPhotos,
+                maxImages: 4
+            )
+            
+            PhotoGroupUploadView(
+                title: "Araç İç Mekan Fotoğrafları",
+                selectedImages: $interiorPhotos,
+                maxImages: 4
+            )
         }
     }
 
@@ -247,6 +243,118 @@ struct AddVehicleView: View {
         case 2: return numbersCount == 3 || numbersCount == 4
         case 3: return numbersCount == 2
         default: return false
+        }
+    }
+
+    private var brandSelectionView: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Button {
+                    showBrandSheet = false
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.title2)
+                        .foregroundColor(.black)
+                }
+                
+                Spacer()
+                
+                Text("Marka Seçin")
+                    .font(CustomFont.bold(size: 20))
+                
+                Spacer()
+                
+                // Boş view for alignment
+                Color.clear
+                    .frame(width: 24)
+            }
+            .padding(.horizontal)
+            .padding(.top, 16)
+            
+            ScrollView {
+                LazyVStack(spacing: 12) {
+                    ForEach(vehicleBrands.indices, id: \.self) { index in
+                        Button(action: {
+                            selectedBrandIndex = index
+                            selectedModel = nil
+                            showBrandSheet = false
+                            showModelSheet = true
+                        }) {
+                            HStack {
+                                Text(vehicleBrands[index].name)
+                                    .font(CustomFont.medium(size: 16))
+                                    .foregroundColor(.primary)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(.gray)
+                            }
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(Color.white)
+                            .cornerRadius(12)
+                            .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal)
+        }
+    }
+
+    private var modelSelectionView: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Button {
+                    showModelSheet = false
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.title2)
+                        .foregroundColor(.black)
+                }
+                
+                Spacer()
+                
+                Text("Model Seçin")
+                    .font(CustomFont.bold(size: 20))
+                
+                Spacer()
+                
+                // Boş view for alignment
+                Color.clear
+                    .frame(width: 24)
+            }
+            .padding(.horizontal)
+            .padding(.top, 16)
+            
+            ScrollView {
+                LazyVStack(spacing: 12) {
+                    if let brandIndex = selectedBrandIndex {
+                        ForEach(vehicleBrands[brandIndex].models.sorted(), id: \.self) { model in
+                            Button(action: {
+                                selectedModel = model
+                                showModelSheet = false
+                            }) {
+                                HStack {
+                                    Text(model)
+                                        .font(CustomFont.medium(size: 16))
+                                        .foregroundColor(.primary)
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(.gray)
+                                }
+                                .padding()
+                                .frame(maxWidth: .infinity)
+                                .background(Color.white)
+                                .cornerRadius(12)
+                                .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal)
         }
     }
 }

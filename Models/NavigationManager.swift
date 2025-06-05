@@ -29,6 +29,7 @@ class NavigationManager: ObservableObject {
         case modelSelection
         case addVehicle
         case editVehicle
+        case phoneLogin
         
         var id: String {
             switch self {
@@ -36,6 +37,7 @@ class NavigationManager: ObservableObject {
             case .modelSelection: return "modelSelection"
             case .addVehicle: return "addVehicle"
             case .editVehicle: return "editVehicle"
+            case .phoneLogin: return "phoneLogin"
             }
         }
     }
@@ -57,6 +59,7 @@ class NavigationManager: ObservableObject {
     }
     
     func presentFullScreen(_ destination: FullScreenDestination) {
+        print("🔧 NavigationManager: presentFullScreen(\(destination)) çağrıldı")
         presentedFullScreenCover = destination
     }
     
@@ -65,6 +68,7 @@ class NavigationManager: ObservableObject {
     }
     
     func dismissFullScreen() {
+        print("🔧 NavigationManager: dismissFullScreen() çağrıldı")
         presentedFullScreenCover = nil
     }
 } 

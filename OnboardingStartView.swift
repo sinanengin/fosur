@@ -79,6 +79,10 @@ struct OnboardingStartView: View {
                     appState.setGuestUser()
                     handleTransitionToHome()
                 },
+                onPhoneLogin: {
+                    // Artık NavigationManager sistemi kullanıyoruz
+                    // Bu callback artık kullanılmayacak
+                },
                 hideGuestOption: false // Misafir seçeneği burada açık olmalı
             )
             .presentationDetents([.fraction(0.55)])
@@ -91,6 +95,15 @@ struct OnboardingStartView: View {
         .sheet(isPresented: $showPrivacyPolicy) {
             PrivacyPolicyView()
                 .presentationDetents([.medium, .large])
+        }
+        .fullScreenCover(item: $appState.navigationManager.presentedFullScreenCover) { destination in
+            switch destination {
+            case .phoneLogin:
+                PhoneLoginView()
+                    .environmentObject(appState)
+            default:
+                EmptyView()
+            }
         }
     }
 

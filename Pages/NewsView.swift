@@ -17,13 +17,13 @@ struct NewsView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Duyurular")
-                .font(CustomFont.bold(size: 28))
-                .padding(.top, 24)
-                .padding(.horizontal)
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Duyurular")
+                    .font(CustomFont.bold(size: 28))
+                    .padding(.top, 24)
+                    .padding(.horizontal)
 
-            // Kategori Butonları
+                // Kategori Butonları
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(NewsCategory.allCases, id: \.self) { category in
@@ -38,31 +38,31 @@ struct NewsView: View {
                 .padding(.horizontal)
             }
 
-            // Scrollable News Cards
-            ScrollViewReader { proxy in
-                ScrollView {
-                    LazyVStack(spacing: 16) {
-                        ForEach(filteredNews) { news in
-                            NewsCardView(news: news)
-                                .onTapGesture {
-                                    selectedNews = news
-                                    showDetail = true
-                                }
+                // Scrollable News Cards
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        LazyVStack(spacing: 16) {
+                            ForEach(filteredNews) { news in
+                                NewsCardView(news: news)
+                                    .onTapGesture {
+                                        selectedNews = news
+                                        showDetail = true
+                                    }
+                            }
                         }
+                        .padding(.horizontal)
+                        .id("TOP")
                     }
-                    .padding(.horizontal)
-                    .id("TOP")
-                }
-                .onChange(of: selectedCategory) {
-                    withAnimation(.easeInOut(duration: 0.4)) {
-                        proxy.scrollTo("TOP", anchor: .top)
+                    .onChange(of: selectedCategory) {
+                        withAnimation(.easeInOut(duration: 0.4)) {
+                            proxy.scrollTo("TOP", anchor: .top)
+                        }
                     }
                 }
             }
-        }
-        .sheet(item: $selectedNews) { news in
-            NewsDetailView(news: news)
-        }
+            .sheet(item: $selectedNews) { news in
+                NewsDetailView(news: news)
+            }
         .background(Color("BackgroundColor"))
     }
 }

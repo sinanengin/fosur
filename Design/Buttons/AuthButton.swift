@@ -5,11 +5,25 @@ struct AuthButton: View {
     var imageName: String
     var isSystemImage: Bool = false
     var action: () -> Void // Dışarıdan fonksiyon alacak
+    
+    @State private var isProcessing = false // Çoklu tıklama koruması
 
     var body: some View {
         Button(action: {
+            guard !isProcessing else { 
+                print("⚠️ AuthButton (\(title)): Zaten işleniyor, çıkıyor...")
+                return 
+            }
+            isProcessing = true
+            
             action()
-            print("\(title) tıklandı")
+            print("🔘 AuthButton: \(title) tıklandı")
+            
+            // 1 saniye sonra reset et
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                isProcessing = false
+                print("🔘 AuthButton (\(title)): isProcessing reset edildi")
+            }
         }) {
             HStack(spacing: 10) { // İkon ve yazı arasındaki boşluk
                 if isSystemImage {
@@ -29,13 +43,14 @@ struct AuthButton: View {
 
             }
             
-            .foregroundColor(Color.logo)
+            .foregroundColor(isProcessing ? Color.gray : Color.logo)
             .frame(maxWidth: .infinity, minHeight: 50) // Buton genişliği tam olacak, yüksekliği sabit
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.logo, lineWidth: 1)
+                    .stroke(isProcessing ? Color.gray : Color.logo, lineWidth: 1)
             )
         }
+        .disabled(isProcessing) // Processing sırasında disabled
     }
 }
 

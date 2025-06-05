@@ -9,11 +9,9 @@ import SwiftUI
 
 @main
 struct fosurApp: App {
-    @StateObject var appState = AppState()
     var body: some Scene {
         WindowGroup {
             SplashScreenView()
-                .environmentObject(appState)
         }
     }
 }

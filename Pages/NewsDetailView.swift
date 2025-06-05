@@ -53,8 +53,8 @@ struct NewsDetailView: View {
                                 .font(.system(size: 14))
                             Text(news.date)
                                 .font(CustomFont.regular(size: 14))
-                                .foregroundColor(.gray)
-                        }
+                        .foregroundColor(.gray)
+                }
                     }
                     // Açıklama
                     Text(news.description)
@@ -82,7 +82,7 @@ struct NewsDetailView: View {
                             }
                         }
                     }
-                }
+        }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 24)
                 .background(

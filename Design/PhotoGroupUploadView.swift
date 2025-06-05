@@ -4,6 +4,7 @@ import PhotosUI
 struct PhotoGroupUploadView: View {
     let title: String
     @Binding var selectedImages: [UIImage]
+    let maxImages: Int
 
     @State private var isImagePickerPresented = false
     @State private var pickerConfig = PHPickerConfiguration()
@@ -48,9 +49,9 @@ struct PhotoGroupUploadView: View {
             preferredItemEncoding: .automatic,
             photoLibrary: .shared()
         )
-        .onChange(of: isImagePickerPresented) { presented in
-            if !presented {
-                loadPhotos()
+        .onChange(of: selectedImages) { oldValue, newValue in
+            if newValue.count > maxImages {
+                selectedImages = Array(newValue.prefix(maxImages))
             }
         }
     }

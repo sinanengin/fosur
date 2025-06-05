@@ -1,111 +1,302 @@
 import SwiftUI
 
 struct ChatDetailView: View {
-    let chat: ChatPreview
-    var onDismiss: () -> Void
-
-    @Environment(\.dismiss) var dismiss
-    @State private var newMessage = ""
-    @State private var chatMessages: [ChatBubble] = [
-        ChatBubble(content: "Merhaba, nasıl yardımcı olabilirim?", isSentByUser: false),
-        ChatBubble(content: "Temizlik hizmeti hakkında bilgi alabilir miyim?", isSentByUser: true)
-    ]
-
+    @Environment(\.dismiss) private var dismiss
+    @State private var messageText = ""
+    @State private var messages: [ChatMessage] = []
+    @State private var showImagePicker = false
+    @State private var selectedImage: UIImage?
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+    
+    let chat: Chat
+    
     var body: some View {
         VStack(spacing: 0) {
-            // Header
-            HStack(spacing: 12) {
-                Button {
-                    dismiss()
-                    onDismiss()
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .foregroundColor(.black)
-                        .padding(8)
-                }
-
-                Image("profile_placeholder")
-                    .resizable()
-                    .frame(width: 36, height: 36)
-                    .clipShape(Circle())
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(chat.senderName)
-                        .font(CustomFont.medium(size: 16))
-                    Text(chat.senderTitle)
-                        .font(CustomFont.regular(size: 12))
-                        .foregroundColor(.gray)
-                }
-
-                Spacer()
-            }
-            .padding()
-            .background(Color.white.shadow(radius: 2))
-
-            // Messages
+            // Mesaj Listesi
             ScrollViewReader { proxy in
                 ScrollView {
-                    VStack(spacing: 12) {
-                        ForEach(chatMessages) { bubble in
-                            HStack {
-                                if bubble.isSentByUser {
-                                    Spacer()
-                                }
-
-                                Text(bubble.content)
-                                    .padding(12)
-                                    .background(bubble.isSentByUser ? Color.logo.opacity(0.2) : Color.gray.opacity(0.1))
-                                    .foregroundColor(.black)
-                                    .cornerRadius(16)
-                                    .frame(maxWidth: 250, alignment: bubble.isSentByUser ? .trailing : .leading)
-
-                                if !bubble.isSentByUser {
-                                    Spacer()
-                                }
-                            }
-                            .padding(.horizontal)
+                    LazyVStack(spacing: 12) {
+                        ForEach(messages) { message in
+                            MessageBubble(message: message)
+                                .id(message.id)
                         }
                     }
-                    .padding(.vertical, 10)
+                    .padding(.horizontal)
+                    .padding(.top, 8)
                 }
-                .onChange(of: chatMessages.count) { _ in
+                .onChange(of: messages.count) { _, _ in
                     withAnimation {
-                        proxy.scrollTo(chatMessages.last?.id)
+                        proxy.scrollTo(messages.last?.id, anchor: .bottom)
                     }
                 }
             }
-
-            // Input bar
-            HStack(spacing: 10) {
-                TextField("Mesaj yaz...", text: $newMessage)
-                    .padding(12)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(12)
-
-                Button {
-                    sendMessage()
-                } label: {
-                    Image(systemName: "paperplane.fill")
-                        .foregroundColor(.white)
-                        .padding(12)
-                        .background(Color.logo)
-                        .clipShape(Circle())
+            
+            // Mesaj Giriş Alanı
+            VStack(spacing: 0) {
+                Divider()
+                
+                HStack(spacing: 12) {
+                    // Fotoğraf Ekleme Butonu
+                    Button(action: { showImagePicker = true }) {
+                        Image(systemName: "photo")
+                            .font(.system(size: 24))
+                            .foregroundColor(.logo)
+                    }
+                    
+                    // Mesaj Giriş Alanı
+                    TextField("Mesajınızı yazın...", text: $messageText)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .padding(.vertical, 8)
+                    
+                    // Gönder Butonu
+                    Button(action: sendMessage) {
+                        Image(systemName: "arrow.up.circle.fill")
+                            .font(.system(size: 32))
+                            .foregroundColor(messageText.isEmpty ? .gray : .logo)
+                    }
+                    .disabled(messageText.isEmpty || isLoading)
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+                .background(Color.white)
+            }
+        }
+        .navigationTitle(chat.title)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: {}) {
+                    Image(systemName: "phone")
+                        .foregroundColor(.logo)
                 }
             }
-            .padding()
-            .background(Color.white.shadow(radius: 2))
         }
-        .ignoresSafeArea(.keyboard, edges: .bottom)
-        .navigationBarBackButtonHidden(true)
+        .sheet(isPresented: $showImagePicker) {
+            ImagePicker(selectedImage: $selectedImage)
+        }
+        .onChange(of: selectedImage) { _, newImage in
+            if let image = newImage {
+                handleImageSelection(image)
+            }
+        }
+        .onAppear {
+            loadMessages()
+        }
+        .overlay {
+            if isLoading {
+                ProgressView()
+                    .scaleEffect(1.5)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.black.opacity(0.2))
+            }
+        }
+        .alert("Hata", isPresented: .constant(errorMessage != nil)) {
+            Button("Tamam") {
+                errorMessage = nil
+            }
+        } message: {
+            if let error = errorMessage {
+                Text(error)
+            }
+        }
     }
-
+    
+    private func loadMessages() {
+        // Test için örnek mesajlar
+        messages = [
+            ChatMessage(
+                id: UUID().uuidString,
+                chatId: chat.id,
+                senderId: "support",
+                content: "Merhaba, nasıl yardımcı olabilirim?",
+                imageUrl: nil,
+                timestamp: Date().addingTimeInterval(-3600),
+                isRead: true,
+                type: .text
+            ),
+            ChatMessage(
+                id: UUID().uuidString,
+                chatId: chat.id,
+                senderId: "current_user",
+                content: "Aracımı yıkatmak istiyorum.",
+                imageUrl: nil,
+                timestamp: Date().addingTimeInterval(-3500),
+                isRead: true,
+                type: .text
+            ),
+            ChatMessage(
+                id: UUID().uuidString,
+                chatId: chat.id,
+                senderId: "support",
+                content: "Tabii ki, hangi hizmeti tercih edersiniz?",
+                imageUrl: nil,
+                timestamp: Date().addingTimeInterval(-3400),
+                isRead: true,
+                type: .text
+            )
+        ]
+    }
+    
     private func sendMessage() {
-        guard !newMessage.trimmingCharacters(in: .whitespaces).isEmpty else { return }
-        chatMessages.append(ChatBubble(content: newMessage, isSentByUser: true))
-        newMessage = ""
-
+        guard !messageText.isEmpty else { return }
+        
+        let newMessage = ChatMessage(
+            id: UUID().uuidString,
+            chatId: chat.id,
+            senderId: "current_user",
+            content: messageText,
+            imageUrl: nil,
+            timestamp: Date(),
+            isRead: false,
+            type: .text
+        )
+        
+        messages.append(newMessage)
+        messageText = ""
+        
+        // Simüle edilmiş yanıt
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            chatMessages.append(ChatBubble(content: "Mesajınız alındı. En kısa sürede yanıtlayacağız.", isSentByUser: false))
+            let response = ChatMessage(
+                id: UUID().uuidString,
+                chatId: self.chat.id,
+                senderId: "support",
+                content: "Mesajınız alındı, en kısa sürede size dönüş yapacağız.",
+                imageUrl: nil,
+                timestamp: Date(),
+                isRead: false,
+                type: .text
+            )
+            self.messages.append(response)
         }
+    }
+    
+    private func handleImageSelection(_ image: UIImage) {
+        if let _ = image.jpegData(compressionQuality: 0.8) {
+            let newMessage = ChatMessage(
+                id: UUID().uuidString,
+                chatId: chat.id,
+                senderId: "current_user",
+                content: "",
+                imageUrl: nil,
+                timestamp: Date(),
+                isRead: false,
+                type: .image
+            )
+            messages.append(newMessage)
+            
+            // Simüle edilmiş yanıt
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                let response = ChatMessage(
+                    id: UUID().uuidString,
+                    chatId: self.chat.id,
+                    senderId: "support",
+                    content: "Fotoğrafınız alındı, inceleyip size dönüş yapacağız.",
+                    imageUrl: nil,
+                    timestamp: Date(),
+                    isRead: false,
+                    type: .text
+                )
+                self.messages.append(response)
+            }
+        }
+    }
+}
+
+struct MessageBubble: View {
+    let message: ChatMessage
+    
+    var body: some View {
+        HStack {
+            if message.senderId == "current_user" {
+                Spacer()
+            }
+            
+            VStack(alignment: message.senderId == "current_user" ? .trailing : .leading, spacing: 4) {
+                if message.type == .image, let imageUrl = message.imageUrl {
+                    AsyncImage(url: URL(string: imageUrl)) { image in
+                        image
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxWidth: 200)
+                            .cornerRadius(12)
+                    } placeholder: {
+                        ProgressView()
+                            .frame(width: 200, height: 150)
+                    }
+                }
+                
+                if message.type == .text {
+                    Text(message.content)
+                        .font(CustomFont.regular(size: 16))
+                        .foregroundColor(message.senderId == "current_user" ? .white : .primary)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(message.senderId == "current_user" ? Color.logo : Color.gray.opacity(0.1))
+                        )
+                }
+                
+                Text(message.timestamp.formatted(.dateTime.hour().minute()))
+                    .font(CustomFont.regular(size: 12))
+                    .foregroundColor(.secondary)
+            }
+            
+            if message.senderId != "current_user" {
+                Spacer()
+            }
+        }
+    }
+}
+
+struct ImagePicker: UIViewControllerRepresentable {
+    @Binding var selectedImage: UIImage?
+    @Environment(\.presentationMode) private var presentationMode
+    
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.delegate = context.coordinator
+        return picker
+    }
+    
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let parent: ImagePicker
+        
+        init(_ parent: ImagePicker) {
+            self.parent = parent
+        }
+        
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+            if let image = info[.originalImage] as? UIImage {
+                parent.selectedImage = image
+            }
+            parent.presentationMode.wrappedValue.dismiss()
+        }
+        
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            parent.presentationMode.wrappedValue.dismiss()
+        }
+    }
+}
+
+#Preview {
+    NavigationStack {
+        ChatDetailView(chat: Chat(
+            id: "preview_chat",
+            userId: "preview_user",
+            title: "Destek",
+            lastMessage: "Merhaba, nasıl yardımcı olabilirim?",
+            timestamp: Date(),
+            isRead: true,
+            participants: ["preview_user", "support"],
+            type: .support
+        ))
     }
 }

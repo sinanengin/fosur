@@ -139,15 +139,15 @@ struct EditVehicleView: View {
                 }
 
                 CustomInputField(placeholder: "ABC", text: $plateLetters)
-                    .onChange(of: plateLetters) {
-                        plateLetters = plateLetters.uppercased().filter { $0.isLetter }
+                    .onChange(of: plateLetters) { oldValue, newValue in
+                        plateLetters = newValue.uppercased().filter { $0.isLetter }
                     }
                     .frame(width: 80)
 
                 CustomInputField(placeholder: "1234", text: $plateNumbers)
                     .keyboardType(.numberPad)
-                    .onChange(of: plateNumbers) {
-                        plateNumbers = plateNumbers.filter { $0.isNumber }
+                    .onChange(of: plateNumbers) { oldValue, newValue in
+                        plateNumbers = newValue.filter { $0.isNumber }
                     }
                     .frame(width: 100)
             }
@@ -156,8 +156,17 @@ struct EditVehicleView: View {
 
     private var photoSection: some View {
         VStack(spacing: 16) {
-            PhotoGroupUploadView(title: "Araç Dış Fotoğrafları", selectedImages: $exteriorPhotos)
-            PhotoGroupUploadView(title: "Araç İç Mekan Fotoğrafları", selectedImages: $interiorPhotos)
+            PhotoGroupUploadView(
+                title: "Araç Dış Fotoğrafları",
+                selectedImages: $exteriorPhotos,
+                maxImages: 4
+            )
+            
+            PhotoGroupUploadView(
+                title: "Araç İç Mekan Fotoğrafları",
+                selectedImages: $interiorPhotos,
+                maxImages: 4
+            )
         }
     }
 
