@@ -426,24 +426,30 @@ struct PhoneLoginView: View {
                     .focused($isMailFieldFocused)
                 
                 Button(action: {
-                    createUserAccount()
+                    createCustomerAccount()
                 }) {
                     HStack {
-                        Text("Hesabımı Oluştur")
-                            .font(CustomFont.bold(size: 18))
-                        
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 16, weight: .bold))
+                        if isLoading {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .scaleEffect(0.8)
+                        } else {
+                            Text("Hesabımı Oluştur")
+                                .font(CustomFont.bold(size: 18))
+                            
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 16, weight: .bold))
+                        }
                     }
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 18)
-                    .background(isMailValid ? Color.logo : Color.gray.opacity(0.4))
+                    .background((isMailValid && !isLoading) ? Color.logo : Color.gray.opacity(0.4))
                     .cornerRadius(16)
-                    .shadow(color: isMailValid ? Color.logo.opacity(0.3) : Color.clear, radius: 8, x: 0, y: 4)
+                    .shadow(color: (isMailValid && !isLoading) ? Color.logo.opacity(0.3) : Color.clear, radius: 8, x: 0, y: 4)
                 }
-                .disabled(!isMailValid)
-                .scaleEffect(isMailValid ? 1.0 : 0.98)
+                .disabled(!isMailValid || isLoading)
+                .scaleEffect((isMailValid && !isLoading) ? 1.0 : 0.98)
                 .animation(.easeInOut(duration: 0.2), value: isMailValid)
                 
                 VStack(spacing: 8) {
@@ -627,26 +633,63 @@ struct PhoneLoginView: View {
         }
     }
     
-    private func createUserAccount() {
-        // MongoDB entegrasyonu için hazırlık - şimdilik lokal kayıt
-        let newUser = User(
-            id: UUID(),
-            name: name,
-            surname: surname,
-            email: mail,
-            phoneNumber: "+90" + phoneNumber,
-            profileImage: nil,
-            vehicles: []
-        )
+    private func createCustomerAccount() {
+        guard !isLoading else { return }
         
-        // AppState'i güncelle ve misafir kullanıcıyı gerçek kullanıcı ile değiştir
-        appState.currentUser = newUser
-        appState.isUserLoggedIn = true
-        appState.tabSelection = .callUs
+        print("👤 PhoneLoginView: Customer hesabı oluşturuluyor")
+        print("👤 Ad: \(name)")
+        print("👤 Soyad: \(surname)")
+        print("📧 Email: \(mail)")
         
-        // Başarı animasyonu ile çıkış
-        withAnimation(.easeInOut(duration: 0.5)) {
-            dismiss()
+        isLoading = true
+        errorMessage = ""
+        showError = false
+        
+        Task {
+            do {
+                let customerData = try await CustomerService.shared.createCustomer(
+                    givenName: name,
+                    lastName: surname,
+                    email: mail
+                )
+                
+                print("✅ Customer başarıyla oluşturuldu")
+                print("👤 Customer ID: \(customerData.id)")
+                
+                await MainActor.run {
+                    isLoading = false
+                    
+                    // AppState'i güncelle - artık tam bilgilerle
+                    appState.currentUser = User(
+                        id: UUID(),
+                        name: name,
+                        surname: surname,
+                        email: mail,
+                        phoneNumber: authService.currentUser?.phoneNumber ?? "",
+                        profileImage: nil,
+                        vehicles: []
+                    )
+                    appState.isUserLoggedIn = true
+                    appState.tabSelection = .callUs
+                    
+                    print("✅ AppState güncellendi, ana sayfaya yönlendiriliyor")
+                    
+                    // Başarı animasyonu ile çıkış
+                    withAnimation(.easeInOut(duration: 0.5)) {
+                        dismiss()
+                    }
+                }
+            } catch {
+                print("❌ Customer oluşturma hatası: \(error)")
+                print("❌ Error type: \(type(of: error))")
+                print("❌ Localized description: \(error.localizedDescription)")
+                
+                await MainActor.run {
+                    isLoading = false
+                    errorMessage = error.localizedDescription
+                    showError = true
+                }
+            }
         }
     }
 } 
