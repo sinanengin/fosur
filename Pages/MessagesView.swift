@@ -10,7 +10,7 @@ struct MessagesView: View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 16) {
                 Text("Mesajlar")
-                    .font(CustomFont.bold(size: 26))
+                    .font(CustomFont.bold(size: 28))
                     .padding(.horizontal)
                     .padding(.top, 16)
                 

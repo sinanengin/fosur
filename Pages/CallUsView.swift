@@ -104,69 +104,67 @@ struct CallUsView: View {
     }
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                if let user = appState.currentUser {
-                    Text("\(greeting), \(user.name)")
-                        .font(CustomFont.bold(size: 26))
+        VStack(alignment: .leading, spacing: 16) {
+            if let user = appState.currentUser {
+                Text("\(greeting), \(user.name)")
+                    .font(CustomFont.bold(size: 28))
+                    .padding(.horizontal)
+                    .padding(.top, 16)
+            }
+            
+            VStack(spacing: 24) {
+                if !appState.isUserLoggedIn {
+                    guestPromptView
+                } else {
+                    // Araç Seçici
+                    if let vehicles = appState.currentUser?.vehicles, !vehicles.isEmpty {
+                        VehicleCarousel(
+                            vehicles: vehicles,
+                            selectedIndex: $selectedVehicleIndex,
+                            onVehicleChange: handleVehicleChange
+                        )
                         .padding(.horizontal)
-                        .padding(.top, 16)
-                }
-                
-                VStack(spacing: 24) {
-                    if !appState.isUserLoggedIn {
-                        guestPromptView
-                    } else {
-                        // Araç Seçici
-                        if let vehicles = appState.currentUser?.vehicles, !vehicles.isEmpty {
-                            VehicleCarousel(
-                                vehicles: vehicles,
-                                selectedIndex: $selectedVehicleIndex,
-                                onVehicleChange: handleVehicleChange
-                            )
-                            .padding(.horizontal)
-                        }
-                        
-                        // Hizmet ve Adres Kartları
-                        VStack(spacing: 16) {
-                            // Adres Kartı
-                            AddressCard(
-                                address: selectedAddress,
-                                onTap: { showAddressSheet = true }
-                            )
-                            
-                            // Hizmet Kartı
-                            ServiceCard(
-                                services: Array(selectedServices),
-                                onTap: { showServiceSheet = true }
-                            )
-                        }
-                        .padding(.horizontal)
-                        
-                        // Devam Et Butonu
-                        Button(action: handleContinue) {
-                            HStack {
-                                Text("Devam Et")
-                                    .font(CustomFont.bold(size: 18))
-                                
-                                Image(systemName: "arrow.right")
-                                    .font(.system(size: 16, weight: .bold))
-                            }
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 18)
-                            .background(isFormValid ? Color.logo : Color.gray.opacity(0.4))
-                            .cornerRadius(16)
-                            .shadow(color: isFormValid ? Color.logo.opacity(0.3) : Color.clear, radius: 8, x: 0, y: 4)
-                        }
-                        .disabled(!isFormValid)
-                        .padding(.horizontal)
-                        .padding(.top, 8)
                     }
+                    
+                    // Hizmet ve Adres Kartları
+                    VStack(spacing: 16) {
+                        // Adres Kartı
+                        AddressCard(
+                            address: selectedAddress,
+                            onTap: { showAddressSheet = true }
+                        )
+                        
+                        // Hizmet Kartı
+                        ServiceCard(
+                            services: Array(selectedServices),
+                            onTap: { showServiceSheet = true }
+                        )
+                    }
+                    .padding(.horizontal)
+                    
+                    // Devam Et Butonu
+                    Button(action: handleContinue) {
+                        HStack {
+                            Text("Devam Et")
+                                .font(CustomFont.bold(size: 18))
+                            
+                            Image(systemName: "arrow.right")
+                                .font(.system(size: 16, weight: .bold))
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 18)
+                        .background(isFormValid ? Color.logo : Color.gray.opacity(0.4))
+                        .cornerRadius(16)
+                        .shadow(color: isFormValid ? Color.logo.opacity(0.3) : Color.clear, radius: 8, x: 0, y: 4)
+                    }
+                    .disabled(!isFormValid)
+                    .padding(.horizontal)
+                    .padding(.top, 8)
                 }
             }
-            .padding(.vertical)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color("BackgroundColor"))
         .sheet(isPresented: $showAddressSheet) {
             AddressSelectionView(
@@ -452,7 +450,7 @@ struct AddressCard: View {
             }
             .padding(20)
             .frame(maxWidth: .infinity)
-            .frame(height: 120)
+            .frame(height: 160)
             .background(
                 RoundedRectangle(cornerRadius: 24)
                     .fill(Color.white)
@@ -473,7 +471,7 @@ struct ServiceCard: View {
     
     var body: some View {
         Button(action: onTap) {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     Image(systemName: "wrench.and.screwdriver.fill")
                         .font(.system(size: 24))
@@ -491,50 +489,48 @@ struct ServiceCard: View {
                 }
                 
                 if !services.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        ForEach(services.prefix(2)) { service in
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 8) {
+                            ForEach(services) { service in
+                                HStack {
+                                    Text(service.title)
+                                        .font(CustomFont.medium(size: 16))
+                                        .foregroundColor(.primary)
+                                    
+                                    Spacer()
+                                    
+                                    Text(String(format: "%.2f ₺", service.price))
+                                        .font(CustomFont.bold(size: 16))
+                                        .foregroundColor(.logo)
+                                }
+                            }
+                            
+                            Divider()
+                                .padding(.vertical, 4)
+                            
                             HStack {
-                                Text(service.title)
+                                Text("Toplam Tutar")
                                     .font(CustomFont.medium(size: 16))
                                     .foregroundColor(.primary)
                                 
                                 Spacer()
                                 
-                                Text(String(format: "%.2f ₺", service.price))
-                                    .font(CustomFont.bold(size: 16))
+                                Text(String(format: "%.2f ₺", totalPrice))
+                                    .font(CustomFont.bold(size: 18))
                                     .foregroundColor(.logo)
                             }
                         }
-                        
-                        if services.count > 2 {
-                            Text("+ \(services.count - 2) hizmet daha")
-                                .font(CustomFont.regular(size: 14))
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Divider()
-                        
-                        HStack {
-                            Text("Toplam Tutar")
-                                .font(CustomFont.medium(size: 16))
-                                .foregroundColor(.primary)
-                            
-                            Spacer()
-                            
-                            Text(String(format: "%.2f ₺", totalPrice))
-                                .font(CustomFont.bold(size: 18))
-                                .foregroundColor(.logo)
-                        }
                     }
+                    .frame(height: 80)
                 } else {
                     Text("Hizmet Seçin")
                         .font(CustomFont.regular(size: 16))
                         .foregroundColor(.secondary)
                 }
             }
-            .padding(20)
+            .padding(16)
             .frame(maxWidth: .infinity)
-            .frame(height: 120)
+            .frame(height: 160)
             .background(
                 RoundedRectangle(cornerRadius: 24)
                     .fill(Color.white)

@@ -12,54 +12,27 @@ struct ProfileView: View {
     
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
-                    if !appState.isUserLoggedIn {
-                        guestPromptView
-                    } else {
-                        // Profil Başlığı
-                        profileHeader
-                        
-                        // Menü Öğeleri
-                        VStack(spacing: 16) {
-                            menuItem(
-                                icon: "mappin.circle.fill",
-                                title: "Adreslerim",
-                                action: { showAddressSheet = true }
-                            )
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Profil")
+                    .font(CustomFont.bold(size: 28))
+                    .padding(.horizontal)
+                    .padding(.top, 16)
+                
+                ScrollView {
+                    VStack(spacing: 24) {
+                        if !appState.isUserLoggedIn {
+                            guestPromptView
+                        } else {
+                            // Profil Başlığı
+                            profileHeader
                             
-                            menuItem(
-                                icon: "creditcard.fill",
-                                title: "Ödeme Yöntemlerim",
-                                action: { showPaymentSheet = true }
-                            )
-                            
-                            menuItem(
-                                icon: "bell.fill",
-                                title: "Bildirimler",
-                                action: { showNotificationsSheet = true }
-                            )
-                            
-                            menuItem(
-                                icon: "questionmark.circle.fill",
-                                title: "Yardım",
-                                action: { showHelpSheet = true }
-                            )
-                            
-                            menuItem(
-                                icon: "arrow.right.square.fill",
-                                title: "Çıkış Yap",
-                                action: { showLogoutAlert = true }
-                            )
+                            // Menü Öğeleri
+                            menuItems
                         }
-                        .padding(.horizontal)
                     }
                 }
-                .padding(.vertical)
             }
-            .background(Color("BackgroundColor"))
-            .navigationTitle("Profilim")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarHidden(true)
         }
         .sheet(isPresented: $showLoginSheet) {
             AuthSelectionSheetView(
@@ -155,6 +128,41 @@ struct ProfileView: View {
                 .fill(Color.white)
                 .shadow(color: Color.black.opacity(0.08), radius: 15, x: 0, y: 8)
         )
+        .padding(.horizontal)
+    }
+    
+    private var menuItems: some View {
+        VStack(spacing: 16) {
+            menuItem(
+                icon: "mappin.circle.fill",
+                title: "Adreslerim",
+                action: { showAddressSheet = true }
+            )
+            
+            menuItem(
+                icon: "creditcard.fill",
+                title: "Ödeme Yöntemlerim",
+                action: { showPaymentSheet = true }
+            )
+            
+            menuItem(
+                icon: "bell.fill",
+                title: "Bildirimler",
+                action: { showNotificationsSheet = true }
+            )
+            
+            menuItem(
+                icon: "questionmark.circle.fill",
+                title: "Yardım",
+                action: { showHelpSheet = true }
+            )
+            
+            menuItem(
+                icon: "arrow.right.square.fill",
+                title: "Çıkış Yap",
+                action: { showLogoutAlert = true }
+            )
+        }
         .padding(.horizontal)
     }
     
