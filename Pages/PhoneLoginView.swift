@@ -7,12 +7,18 @@ enum PhoneLoginStep {
 struct PhoneLoginView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.dismiss) var dismiss
+    @StateObject private var authService = AuthService.shared
     @State private var step: PhoneLoginStep = .phone
     @State private var phoneNumber: String = ""
     @State private var code: String = ""
     @State private var name: String = ""
     @State private var surname: String = ""
     @State private var mail: String = ""
+    
+    // API ve Loading state'leri
+    @State private var isLoading: Bool = false
+    @State private var errorMessage: String = ""
+    @State private var showError: Bool = false
     
     // Animasyon ve görsel state'ler
     @State private var offset: CGFloat = 0
@@ -95,6 +101,11 @@ struct PhoneLoginView: View {
         }
         .onAppear {
             setupInitialFocus()
+        }
+        .alert("Hata", isPresented: $showError) {
+            Button("Tamam", role: .cancel) { }
+        } message: {
+            Text(errorMessage)
         }
     }
     
@@ -194,27 +205,30 @@ struct PhoneLoginView: View {
                 .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
                 
                 Button(action: {
-                    withAnimation(.easeInOut(duration: 0.4)) {
-                        step = .code
-                        setupFocusForStep(.code)
-                    }
+                    sendVerificationCode()
                 }) {
                     HStack {
-                        Text("Doğrulama Kodu Gönder")
-                            .font(CustomFont.bold(size: 18))
-                        
-                        Image(systemName: "arrow.right")
-                            .font(.system(size: 16, weight: .bold))
+                        if isLoading {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .scaleEffect(0.8)
+                        } else {
+                            Text("Doğrulama Kodu Gönder")
+                                .font(CustomFont.bold(size: 18))
+                            
+                            Image(systemName: "arrow.right")
+                                .font(.system(size: 16, weight: .bold))
+                        }
                     }
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 18)
-                    .background(isPhoneValid ? Color.logo : Color.gray.opacity(0.4))
+                    .background((isPhoneValid && !isLoading) ? Color.logo : Color.gray.opacity(0.4))
                     .cornerRadius(16)
-                    .shadow(color: isPhoneValid ? Color.logo.opacity(0.3) : Color.clear, radius: 8, x: 0, y: 4)
+                    .shadow(color: (isPhoneValid && !isLoading) ? Color.logo.opacity(0.3) : Color.clear, radius: 8, x: 0, y: 4)
                 }
-                .disabled(!isPhoneValid)
-                .scaleEffect(isPhoneValid ? 1.0 : 0.98)
+                .disabled(!isPhoneValid || isLoading)
+                .scaleEffect((isPhoneValid && !isLoading) ? 1.0 : 0.98)
                 .animation(.easeInOut(duration: 0.2), value: isPhoneValid)
             }
             .padding(.horizontal, 20)
@@ -275,36 +289,40 @@ struct PhoneLoginView: View {
                     .focused($isCodeFieldFocused)
                 
                 Button(action: {
-                    withAnimation(.easeInOut(duration: 0.4)) {
-                        step = .name
-                        setupFocusForStep(.name)
-                    }
+                    verifyPhoneCode()
                 }) {
                     HStack {
-                        Text("Devam Et")
-                            .font(CustomFont.bold(size: 18))
-                        
-                        Image(systemName: "arrow.right")
-                            .font(.system(size: 16, weight: .bold))
+                        if isLoading {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .scaleEffect(0.8)
+                        } else {
+                            Text("Devam Et")
+                                .font(CustomFont.bold(size: 18))
+                            
+                            Image(systemName: "arrow.right")
+                                .font(.system(size: 16, weight: .bold))
+                        }
                     }
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 18)
-                    .background(isCodeValid ? Color.logo : Color.gray.opacity(0.4))
+                    .background((isCodeValid && !isLoading) ? Color.logo : Color.gray.opacity(0.4))
                     .cornerRadius(16)
-                    .shadow(color: isCodeValid ? Color.logo.opacity(0.3) : Color.clear, radius: 8, x: 0, y: 4)
+                    .shadow(color: (isCodeValid && !isLoading) ? Color.logo.opacity(0.3) : Color.clear, radius: 8, x: 0, y: 4)
                 }
-                .disabled(!isCodeValid)
-                .scaleEffect(isCodeValid ? 1.0 : 0.98)
+                .disabled(!isCodeValid || isLoading)
+                .scaleEffect((isCodeValid && !isLoading) ? 1.0 : 0.98)
                 .animation(.easeInOut(duration: 0.2), value: isCodeValid)
                 
                 Button(action: {
-                    // Kodu yeniden gönder
+                    resendVerificationCode()
                 }) {
                     Text("Kodu yeniden gönder")
                         .font(CustomFont.medium(size: 16))
                         .foregroundColor(Color.logo)
                 }
+                .disabled(isLoading)
             }
             .padding(.horizontal, 20)
             
@@ -461,6 +479,102 @@ struct PhoneLoginView: View {
             
             Spacer()
         }
+    }
+    
+    // MARK: - API Methods
+    private func sendVerificationCode() {
+        guard !isLoading else { return }
+        
+        print("📱 PhoneLoginView: SMS gönderimi başlıyor")
+        print("📱 Girilen telefon: \(phoneNumber)")
+        
+        isLoading = true
+        errorMessage = ""
+        showError = false
+        
+        Task {
+            do {
+                let formattedPhone = "+90" + phoneNumber
+                print("📱 Gönderilecek telefon: \(formattedPhone)")
+                
+                try await authService.sendPhoneVerification(formattedPhone)
+                
+                print("✅ SMS başarıyla gönderildi, kod adımına geçiliyor")
+                
+                await MainActor.run {
+                    isLoading = false
+                    withAnimation(.easeInOut(duration: 0.4)) {
+                        step = .code
+                        setupFocusForStep(.code)
+                    }
+                }
+            } catch {
+                print("❌ SMS gönderim hatası: \(error)")
+                print("❌ Error type: \(type(of: error))")
+                print("❌ Localized description: \(error.localizedDescription)")
+                
+                await MainActor.run {
+                    isLoading = false
+                    errorMessage = error.localizedDescription
+                    showError = true
+                }
+            }
+        }
+    }
+    
+    private func verifyPhoneCode() {
+        guard !isLoading else { return }
+        
+        print("🔢 PhoneLoginView: Kod doğrulama başlıyor")
+        print("📱 Telefon: \(phoneNumber)")
+        print("🔢 Girilen kod: \(code)")
+        
+        isLoading = true
+        errorMessage = ""
+        showError = false
+        
+        Task {
+            do {
+                let formattedPhone = "+90" + phoneNumber
+                print("📱 Doğrulanacak telefon: \(formattedPhone)")
+                
+                let userDetails = try await authService.verifyPhone(formattedPhone, code: code)
+                
+                print("✅ Kod doğrulandı, kullanıcı giriş yapıyor")
+                print("👤 User ID: \(userDetails.id)")
+                print("📧 Email: \(userDetails.email ?? "none")")
+                print("👤 Name: \(userDetails.name ?? "none")")
+                
+                await MainActor.run {
+                    isLoading = false
+                    // Token ve user details başarıyla alındı ve AuthService'e kaydedildi
+                    // Artık uygulamanın her yerinden erişilebilir durumda
+                    
+                    print("✅ Token ve user details kaydedildi, kayıt aşamasına geçiliyor")
+                    
+                    // Sonraki adım (name) adımına geç
+                    withAnimation(.easeInOut(duration: 0.4)) {
+                        step = .name
+                        setupFocusForStep(.name)
+                    }
+                }
+            } catch {
+                print("❌ Kod doğrulama hatası: \(error)")
+                print("❌ Error type: \(type(of: error))")
+                print("❌ Localized description: \(error.localizedDescription)")
+                
+                await MainActor.run {
+                    isLoading = false
+                    errorMessage = error.localizedDescription
+                    showError = true
+                }
+            }
+        }
+    }
+    
+    private func resendVerificationCode() {
+        print("🔄 PhoneLoginView: Kod yeniden gönderiliyor")
+        sendVerificationCode()
     }
     
     // MARK: - Helper Methods
