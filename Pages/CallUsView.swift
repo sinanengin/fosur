@@ -2,82 +2,9 @@ import SwiftUI
 import CoreLocation
 import WeatherKit
 
-// MARK: - Models
-struct Address: Identifiable, Codable, Equatable {
-    let id: String
-    let title: String
-    let fullAddress: String
-    let latitude: Double
-    let longitude: Double
-    
-    static func == (lhs: Address, rhs: Address) -> Bool {
-        lhs.id == rhs.id
-    }
-}
+// MARK: - Models (Address, Service ve ServiceCategory artık Order.swift'te tanımlı)
 
-struct Service: Identifiable, Codable, Hashable {
-    let id: String
-    let title: String
-    let description: String
-    let price: Double
-    let category: ServiceCategory
-    
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
-    }
-    
-    static func == (lhs: Service, rhs: Service) -> Bool {
-        lhs.id == rhs.id
-    }
-}
-
-enum ServiceCategory: String, Codable, Hashable, CaseIterable {
-    case interiorCleaning = "İç Temizlik"
-    case exteriorCleaning = "Dış Temizlik"
-    case polish = "Pasta Cila"
-}
-
-// MARK: - Services
-class AddressService {
-    static let shared = AddressService()
-    
-    // Örnek adresler
-    private var addresses: [Address] = [
-        Address(id: "1", title: "Ev", fullAddress: "Atatürk Mah. Cumhuriyet Cad. No:123 D:4 Kadıköy/İstanbul", latitude: 40.9909, longitude: 29.0233),
-        Address(id: "2", title: "İş", fullAddress: "Levent Mah. Teknoloji Cad. No:45 D:12 Beşiktaş/İstanbul", latitude: 41.0820, longitude: 29.0163)
-    ]
-    
-    func getAddresses() async throws -> [Address] {
-        // Simüle edilmiş API çağrısı
-        try await Task.sleep(nanoseconds: 500_000_000) // 0.5 saniye bekle
-        return addresses
-    }
-    
-    func addAddress(_ address: Address) {
-        addresses.append(address)
-    }
-    
-    func deleteAddress(id: String) {
-        addresses.removeAll { $0.id == id }
-    }
-}
-
-class ServiceService {
-    static let shared = ServiceService()
-    
-    // Örnek hizmetler
-    private let sampleServices: [Service] = [
-        Service(id: "1", title: "İç Temizlik", description: "Detaylı iç temizlik hizmeti", price: 299.99, category: .interiorCleaning),
-        Service(id: "2", title: "Dış Temizlik", description: "Detaylı dış temizlik hizmeti", price: 199.99, category: .exteriorCleaning),
-        Service(id: "3", title: "Pasta Cila", description: "Profesyonel pasta cila hizmeti", price: 499.99, category: .polish)
-    ]
-    
-    func getServices() async throws -> [Service] {
-        // Simüle edilmiş API çağrısı
-        try await Task.sleep(nanoseconds: 500_000_000) // 0.5 saniye bekle
-        return sampleServices
-    }
-}
+// MARK: - Services (Artık OrderAPIService kullanılıyor)
 
 struct CallUsView: View {
     @EnvironmentObject var appState: AppState
@@ -242,20 +169,30 @@ struct CallUsView: View {
     }
     
     private func handleContinue() {
-        guard let _ = selectedAddress,
+        guard let selectedAddress = selectedAddress,
               !selectedServices.isEmpty,
-              let _ = appState.currentUser?.vehicles[selectedVehicleIndex] else {
+              let vehicles = appState.currentUser?.vehicles,
+              selectedVehicleIndex < vehicles.count else {
             return
         }
         
-        print("Sipariş oluşturuluyor...")
+        let selectedVehicle = vehicles[selectedVehicleIndex]
+        
+        // Sipariş akışını başlat
+        appState.navigationManager.startOrderFlow(
+            vehicle: selectedVehicle,
+            address: selectedAddress,
+            services: Array(selectedServices),
+            appState: appState
+        )
     }
     
     private func loadData() async {
         isLoading = true
         do {
-            async let addressesTask = AddressService.shared.getAddresses()
-            async let servicesTask = ServiceService.shared.getServices()
+            // Yeni OrderAPIService kullanarak veri çek
+            async let addressesTask = OrderAPIService.shared.getAddresses()
+            async let servicesTask = OrderAPIService.shared.getServices()
             
             let (fetchedAddresses, fetchedServices) = try await (addressesTask, servicesTask)
             

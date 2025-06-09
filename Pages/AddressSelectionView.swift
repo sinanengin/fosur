@@ -42,8 +42,12 @@ struct AddressSelectionView: View {
         }
         .sheet(isPresented: $showAddAddress) {
             AddAddressView { newAddress in
-                AddressService.shared.addAddress(newAddress)
-                dismiss()
+                Task {
+                    try? await OrderAPIService.shared.addAddress(newAddress)
+                    await MainActor.run {
+                        dismiss()
+                    }
+                }
             }
         }
     }
@@ -82,9 +86,13 @@ struct AddressSelectionView: View {
                     }
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                         Button(role: .destructive) {
-                            AddressService.shared.deleteAddress(id: address.id)
-                            if selectedAddress?.id == address.id {
-                                selectedAddress = nil
+                            Task {
+                                try? await OrderAPIService.shared.deleteAddress(id: address.id)
+                                await MainActor.run {
+                                    if selectedAddress?.id == address.id {
+                                        selectedAddress = nil
+                                    }
+                                }
                             }
                         } label: {
                             Label("Sil", systemImage: "trash")

@@ -195,7 +195,7 @@ struct ProfileView: View {
     
     private func loadAddresses() async {
         do {
-            let fetchedAddresses = try await AddressService.shared.getAddresses()
+            let fetchedAddresses = try await OrderAPIService.shared.getAddresses()
             await MainActor.run {
                 self.addresses = fetchedAddresses
             }

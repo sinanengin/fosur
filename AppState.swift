@@ -8,6 +8,11 @@ class AppState: ObservableObject {
     @Published var showAddVehicleView = false // EKLEDİK
     @Published var showAuthSheet = false // Giriş yaparken açılan sheet
     @Published var isFromOnboarding = false // Onboarding'den gelip gelmediğini takip eder
+    
+    // Sipariş akışı state'leri
+    @Published var showDateTimeSelection = false
+    @Published var showOrderSummary = false
+    @Published var showPayment = false
 
     func setGuestUser() {
         self.isUserLoggedIn = false

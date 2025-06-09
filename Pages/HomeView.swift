@@ -99,6 +99,19 @@ struct HomeView: View {
                         .interactiveDismissDisabled()
                 }
             }
+            // Sipariş akışı fullScreenCover'ları ayrı ayrı
+            .fullScreenCover(isPresented: $appState.showDateTimeSelection) {
+                DateTimeSelectionView()
+                    .environmentObject(appState)
+            }
+            .fullScreenCover(isPresented: $appState.showOrderSummary) {
+                OrderSummaryView()
+                    .environmentObject(appState)
+            }
+            .fullScreenCover(isPresented: $appState.showPayment) {
+                PaymentView()
+                    .environmentObject(appState)
+            }
         }
     }
 }

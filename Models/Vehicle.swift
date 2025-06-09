@@ -69,6 +69,8 @@ enum VehicleType: String, CaseIterable, Codable {
     }
 }
 
+// MARK: - Vehicle Brand (tanımı MockVehicleData.swift'te var)
+
 // Sample araç örneği
 let sampleVehicle = Vehicle(
     id: UUID(),
@@ -76,7 +78,7 @@ let sampleVehicle = Vehicle(
     model: "Clio",
     plate: "34 ABC 123",
     type: .automobile,
-    images: [UIImage(named: "temp_car")!, UIImage(named: "temp_car")!],
+    images: [], // Görseller AppState'te tanımlanıyor
     userId: UUID(),
     lastServices: []
 )
