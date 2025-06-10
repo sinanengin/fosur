@@ -70,7 +70,15 @@ struct ProfileView: View {
         .alert("Çıkış Yap", isPresented: $showLogoutAlert) {
             Button("İptal", role: .cancel) { }
             Button("Çıkış Yap", role: .destructive) {
-                appState.setGuestUser()
+                // AuthService logout fonksiyonunu çağır (local storage'ı temizler)
+                AuthService.shared.logout()
+                
+                // AppState'i güncelle
+                appState.isUserLoggedIn = false
+                appState.currentUser = nil
+                appState.tabSelection = .callUs
+                
+                print("🚪 Kullanıcı başarıyla çıkış yaptı")
             }
         } message: {
             Text("Çıkış yapmak istediğinizden emin misiniz?")

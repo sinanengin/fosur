@@ -551,17 +551,46 @@ struct PhoneLoginView: View {
                 print("📧 Email: \(userDetails.email ?? "none")")
                 print("👤 Name: \(userDetails.name ?? "none")")
                 
+                // Kullanıcı doğrulandıktan sonra customers API'sine istek yap
+                let customerResponse = try await CustomerService.shared.searchCustomers(userId: userDetails.id)
+                
                 await MainActor.run {
                     isLoading = false
-                    // Token ve user details başarıyla alındı ve AuthService'e kaydedildi
-                    // Artık uygulamanın her yerinden erişilebilir durumda
                     
-                    print("✅ Token ve user details kaydedildi, kayıt aşamasına geçiliyor")
-                    
-                    // Sonraki adım (name) adımına geç
-                    withAnimation(.easeInOut(duration: 0.4)) {
-                        step = .name
-                        setupFocusForStep(.name)
+                    if let customer = customerResponse.first {
+                        // Müşteri bulundu, kullanıcıyı giriş yapmış olarak işaretle
+                        appState.currentUser = User(
+                            id: UUID(),
+                            name: customer.name.givenName,
+                            surname: customer.name.lastName,
+                            email: customer.email ?? "",
+                            phoneNumber: formattedPhone,
+                            profileImage: nil,
+                            vehicles: []
+                        )
+                        appState.isUserLoggedIn = true
+                        appState.tabSelection = .callUs
+                        
+                        print("✅ Müşteri bulundu, giriş yapıldı")
+                        
+                        // Araçları yükle
+                        Task {
+                            await appState.loadUserVehicles()
+                        }
+                        
+                        // Başarı animasyonu ile çıkış
+                        withAnimation(.easeInOut(duration: 0.5)) {
+                            dismiss()
+                        }
+                    } else {
+                        // Müşteri bulunamadı, müşteri oluşturma sürecine devam et
+                        print("❌ Müşteri bulunamadı, müşteri oluşturma sürecine devam ediliyor")
+                        
+                        // Sonraki adım (name) adımına geç
+                        withAnimation(.easeInOut(duration: 0.4)) {
+                            step = .name
+                            setupFocusForStep(.name)
+                        }
                     }
                 }
             } catch {
@@ -656,6 +685,9 @@ struct PhoneLoginView: View {
                 print("✅ Customer başarıyla oluşturuldu")
                 print("👤 Customer ID: \(customerData.id)")
                 
+                // Customer ID'yi kaydet
+                authService.saveCustomerId(customerData.id)
+                
                 await MainActor.run {
                     isLoading = false
                     
@@ -673,6 +705,11 @@ struct PhoneLoginView: View {
                     appState.tabSelection = .callUs
                     
                     print("✅ AppState güncellendi, ana sayfaya yönlendiriliyor")
+                    
+                    // Araçları yükle
+                    Task {
+                        await appState.loadUserVehicles()
+                    }
                     
                     // Başarı animasyonu ile çıkış
                     withAnimation(.easeInOut(duration: 0.5)) {

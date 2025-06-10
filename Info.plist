@@ -15,6 +15,12 @@
 	<string>Hava durumu bilgilerini gösterebilmek için konumunuza ihtiyacımız var.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Hava durumu bilgilerini gösterebilmek için konumunuza ihtiyacımız var.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Araç fotoğraflarını yükleyebilmek için fotoğraf galerinize erişim gerekli.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Araç fotoğraflarını kaydedebilmek için fotoğraf galerinize erişim gerekli.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Araç fotoğrafı çekebilmek için kameraya erişim gerekli.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>

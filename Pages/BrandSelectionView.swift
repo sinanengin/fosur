@@ -1,66 +1,33 @@
 import SwiftUI
 
 struct BrandSelectionView: View {
-    var brands: [VehicleBrand]
-    var onSelect: (Int) -> Void
     @Environment(\.dismiss) var dismiss
-
-    let columns = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
-
+    var brands: [MockVehicleBrand]
+    var onSelect: (Int) -> Void
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Button(action: {
-                    dismiss()
-                }) {
-                    Image(systemName: "xmark")
-                        .font(.title2)
-                        .foregroundColor(.primary)
-                }
-
-                Spacer()
-
-                Text("Markanı Seç")
-                    .font(.title.bold())
-                    .padding(.trailing)
-            }
-            .padding(.horizontal)
-            .padding(.top, 20)
-            .safeAreaInset(edge: .top) { Spacer().frame(height: 0) }
-            .padding(.bottom, 24)
-
-            ScrollView {
-                LazyVGrid(columns: columns, spacing: 12) {
-                    ForEach(brands.indices, id: \.self) { index in
-                        Button(action: {
-                            dismiss()
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                onSelect(index)
-                            }
-                        }) {
-                            VStack(spacing: 6) {
-                                Image("car_logo_placeholder")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(height: 50)
-                                Text(brands[index].name)
-                                    .font(CustomFont.medium(size: 14))
-                                    .foregroundColor(.primary)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.white)
-                            .cornerRadius(12)
-                            .shadow(radius: 2)
+        NavigationStack {
+            List {
+                ForEach(brands.indices, id: \.self) { index in
+                    Button(action: {
+                        onSelect(index)
+                        dismiss()
+                    }) {
+                        HStack {
+                            Text(brands[index].name)
+                                .foregroundColor(.primary)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(.gray)
                         }
                     }
                 }
-                .padding(.horizontal)
             }
-
-            Spacer()
+            .navigationTitle("Marka Seçin")
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarItems(
+                leading: Button("İptal") { dismiss() }
+            )
         }
-        .background(Color("BackgroundColor"))
-        .ignoresSafeArea()
     }
 }

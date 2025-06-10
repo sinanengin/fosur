@@ -149,7 +149,79 @@ class CustomerService {
             print("👤 Customer ID: \(customerResponse.data.id)")
             print("📧 Customer Email: \(customerResponse.data.email ?? "none")")
             
+            // Customer ID'yi AuthService'e kaydet
+            authService.saveCustomerId(customerResponse.data.id)
+            
             return customerResponse.data
+            
+        } catch let error as CustomerError {
+            print("❌ CustomerError: \(error.localizedDescription)")
+            throw error
+        } catch let decodingError as DecodingError {
+            print("❌ JSON Decoding Error: \(decodingError)")
+            switch decodingError {
+            case .keyNotFound(let key, let context):
+                print("❌ Missing key: \(key) in \(context)")
+            case .typeMismatch(let type, let context):
+                print("❌ Type mismatch: \(type) in \(context)")
+            case .valueNotFound(let type, let context):
+                print("❌ Value not found: \(type) in \(context)")
+            case .dataCorrupted(let context):
+                print("❌ Data corrupted: \(context)")
+            @unknown default:
+                print("❌ Unknown decoding error")
+            }
+            throw CustomerError.invalidResponse
+        } catch {
+            print("❌ Network Error: \(error)")
+            print("❌ Error Type: \(type(of: error))")
+            throw CustomerError.networkError
+        }
+    }
+    
+    // MARK: - Search Customers
+    func searchCustomers(userId: String) async throws -> [CustomerData] {
+        print("🔍 CustomerService: searchCustomers başladı - User ID: \(userId)")
+        
+        // URL oluştur
+        guard let url = URL(string: "\(baseURL)/customers?query=owner==user:\(userId)") else {
+            print("❌ URL oluşturulamadı")
+            throw CustomerError.networkError
+        }
+        
+        print("🌐 Request URL: \(url)")
+        
+        do {
+            // Authenticated request at
+            let (data, response) = try await authService.makeAuthenticatedRequest(to: url)
+            
+            print("📥 Response alındı")
+            print("📥 Response Data: \(String(data: data, encoding: .utf8) ?? "empty")")
+            
+            // HTTP status code kontrol et
+            guard let httpResponse = response as? HTTPURLResponse else {
+                print("❌ HTTPURLResponse cast edilemedi")
+                throw CustomerError.networkError
+            }
+            
+            print("📊 HTTP Status Code: \(httpResponse.statusCode)")
+            print("📊 Response Headers: \(httpResponse.allHeaderFields)")
+            
+            // 200 başarılı
+            guard httpResponse.statusCode == 200 else {
+                print("❌ Beklenmeyen status code: \(httpResponse.statusCode)")
+                throw CustomerError.serverError("Customer arama başarısız: HTTP \(httpResponse.statusCode)")
+            }
+            
+            // Response'u parse et - API bir array döndürüyor
+            print("⚙️ JSON parsing başlıyor...")
+            let customerResponses = try JSONDecoder().decode([CreateCustomerResponse].self, from: data)
+            let customers = customerResponses.map { $0.data }
+            
+            print("✅ JSON başarıyla parse edildi")
+            print("👥 Bulunan customer sayısı: \(customers.count)")
+            
+            return customers
             
         } catch let error as CustomerError {
             print("❌ CustomerError: \(error.localizedDescription)")

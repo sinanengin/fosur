@@ -109,12 +109,18 @@ struct OrderSummaryView: View {
             if let vehicle = vehicle {
                 HStack(spacing: 16) {
                     // Araç Görseli
-                    if let uiImage = vehicle.images.first {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 80, height: 80)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    if let vehicleImage = vehicle.images.first {
+                        AsyncImage(url: URL(string: vehicleImage.url)) { image in
+                            image
+                                .resizable()
+                                .scaledToFill()
+                        } placeholder: {
+                            Image("temp_car")
+                                .resizable()
+                                .scaledToFill()
+                        }
+                        .frame(width: 80, height: 80)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                     } else {
                         Image("temp_car")
                             .resizable()

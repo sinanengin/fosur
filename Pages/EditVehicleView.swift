@@ -12,8 +12,8 @@ struct EditVehicleView: View {
     @State private var plateCityCode: String
     @State private var plateLetters: String
     @State private var plateNumbers: String
-    @State private var exteriorPhotos: [UIImage]
-    @State private var interiorPhotos: [UIImage]
+    @State private var exteriorPhotos: [VehicleImage]
+    @State private var interiorPhotos: [VehicleImage]
 
     @State private var showBrandSheet = false
     @State private var showModelSheet = false
@@ -158,13 +158,13 @@ struct EditVehicleView: View {
         VStack(spacing: 16) {
             PhotoGroupUploadView(
                 title: "Araç Dış Fotoğrafları",
-                selectedImages: $exteriorPhotos,
+                selectedImages: .constant(convertToUIImage(exteriorPhotos)),
                 maxImages: 4
             )
             
             PhotoGroupUploadView(
                 title: "Araç İç Mekan Fotoğrafları",
-                selectedImages: $interiorPhotos,
+                selectedImages: .constant(convertToUIImage(interiorPhotos)),
                 maxImages: 4
             )
         }
@@ -226,6 +226,14 @@ struct EditVehicleView: View {
         case 2: return numbersCount == 3 || numbersCount == 4
         case 3: return numbersCount == 2
         default: return false
+        }
+    }
+
+    // Helper function to convert VehicleImage to UIImage
+    private func convertToUIImage(_ vehicleImages: [VehicleImage]) -> [UIImage] {
+        return vehicleImages.compactMap { vehicleImage in
+            // URL'den UIImage yükleme burada yapılabilir, şimdilik placeholder
+            UIImage(named: "temp_car") ?? UIImage()
         }
     }
 }

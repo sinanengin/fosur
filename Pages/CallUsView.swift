@@ -44,14 +44,7 @@ struct CallUsView: View {
                     guestPromptView
                 } else {
                     // Araç Seçici
-                    if let vehicles = appState.currentUser?.vehicles, !vehicles.isEmpty {
-                        VehicleCarousel(
-                            vehicles: vehicles,
-                            selectedIndex: $selectedVehicleIndex,
-                            onVehicleChange: handleVehicleChange
-                        )
-                        .padding(.horizontal)
-                    }
+                    vehicleSection
                     
                     // Hizmet ve Adres Kartları
                     VStack(spacing: 16) {
@@ -126,6 +119,11 @@ struct CallUsView: View {
         .onAppear {
             Task {
                 await loadData()
+                
+                // Giriş yapılmışsa araçları her seferinde yeniden yükle
+                if appState.isUserLoggedIn {
+                    await appState.loadUserVehicles()
+                }
             }
         }
         .onChange(of: selectedAddress) { _, address in
@@ -133,6 +131,77 @@ struct CallUsView: View {
         }
         .onChange(of: selectedVehicleIndex) { _, index in
             // Araç seçildiğinde yapılacak işlemler
+        }
+    }
+    
+    private var vehicleSection: some View {
+        VStack(spacing: 16) {
+            if let vehicles = appState.currentUser?.vehicles {
+                if vehicles.isEmpty {
+                    // Araç yok durumu
+                    VStack(spacing: 16) {
+                        VStack(spacing: 12) {
+                            Image(systemName: "car")
+                                .font(.system(size: 40))
+                                .foregroundColor(.secondary)
+                            
+                            Text("Henüz araç eklememişsiniz")
+                                .font(CustomFont.medium(size: 16))
+                                .foregroundColor(.primary)
+                            
+                            Text("Araç eklemek için Araçlarım sekmesini kullanın")
+                                .font(CustomFont.regular(size: 14))
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        
+                        Button("Araç Ekle") {
+                            appState.tabSelection = .myVehicles
+                        }
+                        .font(CustomFont.medium(size: 14))
+                        .foregroundColor(.logo)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                        .background(Color.logo.opacity(0.1))
+                        .cornerRadius(8)
+                    }
+                    .padding(.vertical, 30)
+                    .padding(.horizontal, 20)
+                    .background(
+                        RoundedRectangle(cornerRadius: 24)
+                            .fill(Color.white)
+                            .shadow(color: Color.black.opacity(0.08), radius: 15, x: 0, y: 8)
+                    )
+                    .padding(.horizontal)
+                } else {
+                    // Araçlar var, karosel göster
+                    VehicleCarousel(
+                        vehicles: vehicles,
+                        selectedIndex: $selectedVehicleIndex,
+                        onVehicleChange: handleVehicleChange
+                    )
+                    .padding(.horizontal)
+                }
+            } else {
+                // Loading state
+                VStack(spacing: 16) {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .logo))
+                        .scaleEffect(1.2)
+                    
+                    Text("Araçlar yükleniyor...")
+                        .font(CustomFont.medium(size: 16))
+                        .foregroundColor(.secondary)
+                }
+                .padding(.vertical, 40)
+                .frame(maxWidth: .infinity)
+                .background(
+                    RoundedRectangle(cornerRadius: 24)
+                        .fill(Color.white)
+                        .shadow(color: Color.black.opacity(0.08), radius: 15, x: 0, y: 8)
+                )
+                .padding(.horizontal)
+            }
         }
     }
     
@@ -284,6 +353,14 @@ struct VehicleCarousel: View {
     }
 }
 
+// Helper function to convert VehicleImage to UIImage
+private func convertToUIImage(_ vehicleImages: [VehicleImage]) -> UIImage? {
+    return vehicleImages.first.flatMap { vehicleImage in
+        // URL'den UIImage yükleme burada yapılabilir, şimdilik placeholder
+        UIImage(named: "temp_car")
+    }
+}
+
 // MARK: - Vehicle Card
 struct VehicleCard: View {
     let vehicle: Vehicle
@@ -291,7 +368,7 @@ struct VehicleCard: View {
     var body: some View {
         HStack(spacing: 16) {
             // Sol taraf - Araç Görseli
-            if let uiImage = vehicle.images.first {
+            if let uiImage = convertToUIImage(vehicle.images) {
                 Image(uiImage: uiImage)
                     .resizable()
                     .scaledToFill()

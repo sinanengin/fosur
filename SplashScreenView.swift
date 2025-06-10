@@ -1,33 +1,54 @@
 import SwiftUI
 
 struct SplashScreenView: View {
-    @State private var isActive = false
-    @State private var opacity: Double = 1.0 // Opaklık için state ekledik
+    @StateObject private var appState = AppState()
+    @State private var opacity: Double = 1.0
     
     var body: some View {
-        if isActive {
-            AppEntryView()
-                .font(CustomFont.regular(size: 16))// Onboarding ekranına geçiş
-        } else {
-            VStack {
-                Image("fosur_logo") // Logo
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 200, height: 200)
-                    .opacity(opacity) // Opaklık değişimi uygulanacak
-                    .onAppear {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.3) {
-                            withAnimation(.easeOut(duration: 0.5)) { // Hızlı ve smooth yok oluş
-                                opacity = 0.0
-                            }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                isActive = true
-                            }
-                        }
+        ZStack {
+            if appState.isLoadingAuth {
+                // Splash screen - auto-login kontrolü yapılırken
+                VStack {
+                    Image("fosur_logo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 200, height: 200)
+                        .opacity(opacity)
+                    
+                    // Loading indicator
+                    VStack(spacing: 16) {
+                        ProgressView()
+                            .scaleEffect(1.2)
+                            .tint(.logo)
+                        
+                        Text("Yükleniyor...")
+                            .font(CustomFont.regular(size: 16))
+                            .foregroundColor(.secondary)
                     }
+                    .padding(.top, 40)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .onAppear {
+                    withAnimation(.easeInOut(duration: 1.0)) {
+                        opacity = 0.8
+                    }
+                }
+            } else {
+                // Auto-login kontrolü tamamlandı
+                if appState.isUserLoggedIn {
+                    // Kullanıcı zaten giriş yapmış, direkt ana sayfaya git
+                    HomeView()
+                        .environmentObject(appState)
+                        .transition(.opacity)
+                } else {
+                    // Kullanıcı giriş yapmamış, onboarding'e git
+                    AppEntryView()
+                        .environmentObject(appState)
+                        .transition(.opacity)
+                }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            //.background(Color("Background")) // Arka plan rengi temaya uygun olacak
         }
+        .animation(.easeInOut(duration: 0.5), value: appState.isLoadingAuth)
+        .animation(.easeInOut(duration: 0.5), value: appState.isUserLoggedIn)
     }
 }

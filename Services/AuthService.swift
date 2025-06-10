@@ -261,7 +261,12 @@ class AuthService: ObservableObject {
             await MainActor.run {
                 authToken = verifyResponse.token
                 currentUser = verifyResponse.userDetails
+                isAuthenticated = true
             }
+            
+            // Token ve user details'i local storage'a kaydet
+            saveTokenToStorage(verifyResponse.token)
+            saveUserDetailsToStorage(verifyResponse.userDetails)
             
             print("✅ Token ve user bilgileri kaydedildi")
             
@@ -292,11 +297,112 @@ class AuthService: ObservableObject {
         }
     }
     
+    // MARK: - Local Storage Management
+    func saveTokenToStorage(_ token: String) {
+        UserDefaults.standard.set(token, forKey: "auth_token")
+        print("💾 Auth token local storage'a kaydedildi")
+    }
+    
+    func saveUserDetailsToStorage(_ userDetails: UserDetails) {
+        do {
+            let data = try JSONEncoder().encode(userDetails)
+            UserDefaults.standard.set(data, forKey: "user_details")
+            print("💾 User details local storage'a kaydedildi")
+        } catch {
+            print("❌ User details kaydedilirken hata: \(error)")
+        }
+    }
+    
+    func getTokenFromStorage() -> String? {
+        return UserDefaults.standard.string(forKey: "auth_token")
+    }
+    
+    func getUserDetailsFromStorage() -> UserDetails? {
+        guard let data = UserDefaults.standard.data(forKey: "user_details") else {
+            return nil
+        }
+        
+        do {
+            let userDetails = try JSONDecoder().decode(UserDetails.self, from: data)
+            return userDetails
+        } catch {
+            print("❌ User details okurken hata: \(error)")
+            return nil
+        }
+    }
+    
+    func clearStoredAuth() {
+        UserDefaults.standard.removeObject(forKey: "auth_token")
+        UserDefaults.standard.removeObject(forKey: "user_details")
+        print("🗑️ Local storage'daki auth bilgileri temizlendi")
+    }
+    
+    // Uygulama başlangıcında kullanılacak
+    func loadStoredAuth() -> Bool {
+        guard let token = getTokenFromStorage(),
+              let userDetails = getUserDetailsFromStorage() else {
+            print("❌ Local storage'da auth bilgileri bulunamadı")
+            return false
+        }
+        
+        // Memory'ye yükle
+        authToken = token
+        currentUser = userDetails
+        isAuthenticated = true
+        
+        print("✅ Local storage'dan auth bilgileri yüklendi")
+        print("👤 User ID: \(userDetails.id)")
+        print("📱 Phone: \(userDetails.phoneNumber)")
+        
+        return true
+    }
+    
+    // Customer bilgileriyle birlikte otomatik giriş
+    func autoLoginWithStoredAuth() async throws -> Bool {
+        guard loadStoredAuth() else {
+            return false
+        }
+        
+        guard let userDetails = currentUser else {
+            return false
+        }
+        
+        // Customer bilgilerini çek
+        do {
+            let customers = try await CustomerService.shared.searchCustomers(userId: userDetails.id)
+            if let customer = customers.first {
+                // Customer ID'yi kaydet
+                saveCustomerId(customer.id)
+                print("✅ Auto-login başarılı - Customer ID: \(customer.id)")
+                return true
+            } else {
+                print("❌ Customer bulunamadı, auto-login başarısız")
+                return false
+            }
+        } catch {
+            print("❌ Auto-login sırasında hata: \(error)")
+            return false
+        }
+    }
+    
+    // MARK: - Customer Management
+    func saveCustomerId(_ customerId: String) {
+        UserDefaults.standard.set(customerId, forKey: "customer_id")
+        print("💾 Customer ID kaydedildi: \(customerId)")
+    }
+    
+    func getCurrentCustomerId() -> String? {
+        return UserDefaults.standard.string(forKey: "customer_id")
+    }
+    
     // MARK: - Token Management
     func logout() {
         authToken = nil
         currentUser = nil
         isAuthenticated = false
+        UserDefaults.standard.removeObject(forKey: "customer_id")
+        clearStoredAuth()
+        print("🚪 Kullanıcı çıkış yaptı, tüm veriler temizlendi")
     }
     
     func getAuthHeaders() -> [String: String] {
