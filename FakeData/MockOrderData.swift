@@ -3,22 +3,6 @@ import Foundation
 // MARK: - Mock Order Data
 var mockOrders: [Order] = []
 
-// MARK: - Mock Addresses
-var mockAddresses = [
-    Address(id: "1", title: "Ev", fullAddress: "Atatürk Mah. Cumhuriyet Cad. No:123 D:4 Kadıköy/İstanbul", latitude: 40.9909, longitude: 29.0233),
-    Address(id: "2", title: "İş", fullAddress: "Levent Mah. Teknoloji Cad. No:45 D:12 Beşiktaş/İstanbul", latitude: 41.0820, longitude: 29.0163),
-    Address(id: "3", title: "Anne Evi", fullAddress: "Çamlıca Mah. Bağdat Cad. No:234 D:8 Üsküdar/İstanbul", latitude: 41.0213, longitude: 29.0641)
-]
-
-// MARK: - Mock Services
-let mockServices = [
-    Service(id: "1", title: "İç Temizlik", description: "Detaylı iç temizlik hizmeti", price: 299.99, category: .interiorCleaning),
-    Service(id: "2", title: "Dış Temizlik", description: "Detaylı dış temizlik hizmeti", price: 199.99, category: .exteriorCleaning),
-    Service(id: "3", title: "Pasta Cila", description: "Profesyonel pasta cila hizmeti", price: 499.99, category: .polish),
-    Service(id: "4", title: "Motor Temizliği", description: "Motor bölmesi detaylı temizlik", price: 149.99, category: .exteriorCleaning),
-    Service(id: "5", title: "Koltuk Yıkama", description: "Özel koltuk temizlik hizmeti", price: 249.99, category: .interiorCleaning)
-]
-
 // MARK: - Mock Payment Cards
 let mockPaymentCards = [
     PaymentCard(
@@ -61,33 +45,9 @@ func generateMockTimeSlots(for date: Date) -> [TimeSlot] {
     return slots
 }
 
-// MARK: - API Service Helpers (Gelecekteki API entegrasyonu için)
+// MARK: - API Service Helpers (Sipariş ve ödeme API'leri için)
 class OrderAPIService {
     static let shared = OrderAPIService()
-    
-    // Adres servisini simüle et
-    func getAddresses() async throws -> [Address] {
-        try await Task.sleep(nanoseconds: 500_000_000) // 0.5 saniye gecikme
-        return mockAddresses
-    }
-    
-    // Adres ekleme
-    func addAddress(_ address: Address) async throws {
-        try await Task.sleep(nanoseconds: 300_000_000) // 0.3 saniye gecikme
-        mockAddresses.append(address)
-    }
-    
-    // Adres silme
-    func deleteAddress(id: String) async throws {
-        try await Task.sleep(nanoseconds: 300_000_000) // 0.3 saniye gecikme
-        mockAddresses.removeAll { $0.id == id }
-    }
-    
-    // Hizmet servisini simüle et
-    func getServices() async throws -> [Service] {
-        try await Task.sleep(nanoseconds: 500_000_000)
-        return mockServices
-    }
     
     // Müsait saatleri getir
     func getAvailableTimeSlots(for date: Date) async throws -> [TimeSlot] {

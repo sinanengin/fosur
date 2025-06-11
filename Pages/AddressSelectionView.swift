@@ -4,6 +4,7 @@ struct AddressSelectionView: View {
     @Environment(\.dismiss) var dismiss
     @Binding var selectedAddress: Address?
     let addresses: [Address]
+    let onRefresh: () -> Void
     @State private var showAddAddress = false
     @State private var addressesToDelete: Set<String> = []
     
@@ -43,9 +44,31 @@ struct AddressSelectionView: View {
         .sheet(isPresented: $showAddAddress) {
             AddAddressView { newAddress in
                 Task {
-                    try? await OrderAPIService.shared.addAddress(newAddress)
-                    await MainActor.run {
-                        dismiss()
+                    do {
+                        // CustomerService ile adres ekle - formattedAddress otomatik parse edilecek
+                        let _ = try await CustomerService.shared.addAddress(
+                            name: newAddress.title,
+                            formattedAddress: newAddress.fullAddress,
+                            latitude: newAddress.latitude,
+                            longitude: newAddress.longitude,
+                            street: "",
+                            neighborhood: "",
+                            district: "",
+                            city: "",
+                            province: "",
+                            postalCode: "",
+                            country: "Türkiye"
+                        )
+                        
+                        await MainActor.run {
+                            onRefresh() // Adresler listesini refresh et
+                            dismiss()
+                        }
+                    } catch {
+                        print("❌ Adres eklenirken hata: \(error)")
+                        await MainActor.run {
+                            dismiss()
+                        }
                     }
                 }
             }
@@ -76,33 +99,36 @@ struct AddressSelectionView: View {
         ScrollView {
             LazyVStack(spacing: 16) {
                 ForEach(addresses) { address in
-                    AddressRow(
-                        address: address,
-                        isSelected: selectedAddress?.id == address.id
-                    )
-                    .onTapGesture {
-                        selectedAddress = address
-                        dismiss()
+                    NavigationLink(destination: AddressDetailView(address: address, onAddressUpdated: onRefresh)) {
+                        AddressRow(
+                            address: address,
+                            isSelected: selectedAddress?.id == address.id
+                        )
                     }
-                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                        Button(role: .destructive) {
-                            Task {
-                                try? await OrderAPIService.shared.deleteAddress(id: address.id)
+                    .buttonStyle(PlainButtonStyle())
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    Button(role: .destructive) {
+                        Task {
+                            do {
+                                try await CustomerService.shared.deleteAddress(addressId: address.id)
                                 await MainActor.run {
                                     if selectedAddress?.id == address.id {
                                         selectedAddress = nil
                                     }
                                 }
+                            } catch {
+                                print("❌ Adres silinirken hata: \(error)")
                             }
-                        } label: {
-                            Label("Sil", systemImage: "trash")
                         }
+                    } label: {
+                        Label("Sil", systemImage: "trash")
                     }
                 }
             }
-            .padding()
         }
+        .padding()
         .background(Color("BackgroundColor"))
+    }
     }
 }
 
@@ -147,6 +173,7 @@ struct AddressRow: View {
 #Preview {
     AddressSelectionView(
         selectedAddress: .constant(nil),
-        addresses: []
+        addresses: [],
+        onRefresh: {}
     )
 } 

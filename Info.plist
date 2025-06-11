@@ -12,9 +12,9 @@
 		<string>Inter-Bold.ttf</string>
 	</array>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Hava durumu bilgilerini gösterebilmek için konumunuza ihtiyacımız var.</string>
+	<string>Hava durumu bilgilerini gösterebilmek ve mevcut konumunuzdan adres oluşturabilmek için konumunuza ihtiyacımız var.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Hava durumu bilgilerini gösterebilmek için konumunuza ihtiyacımız var.</string>
+	<string>Hava durumu bilgilerini gösterebilmek ve mevcut konumunuzdan adres oluşturabilmek için konumunuza ihtiyacımız var.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Araç fotoğraflarını yükleyebilmek için fotoğraf galerinize erişim gerekli.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>

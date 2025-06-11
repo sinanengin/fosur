@@ -21,8 +21,8 @@ struct MyVehiclesView: View {
             .background(Color("BackgroundColor"))
             .ignoresSafeArea(edges: .bottom)
             .onAppear {
-                // View'a her geldiğinde araçları çek
-                if appState.isUserLoggedIn {
+                // Sadece ilk seferinde veya araçlar boşsa çek
+                if appState.isUserLoggedIn && vehicleService.vehicles.isEmpty {
                     Task {
                         await loadVehicles()
                     }
@@ -132,9 +132,7 @@ struct MyVehiclesView: View {
             await loadVehicles()
         }
         .task {
-            if vehicleService.vehicles.isEmpty && appState.isUserLoggedIn {
-                await loadVehicles()
-            }
+            // Task zaten onAppear'da kontrol ediliyor, tekrar yapmaya gerek yok
         }
         .alert("Hata", isPresented: $showError) {
             Button("Tamam", role: .cancel) { }
@@ -151,6 +149,11 @@ struct MyVehiclesView: View {
         do {
             try await vehicleService.getVehicles()
         } catch {
+            // URLError cancelled hatasını gösterme
+            if let urlError = error as? URLError, urlError.code == .cancelled {
+                print("⚠️ Request cancelled - normal durum")
+                return
+            }
             errorMessage = error.localizedDescription
             showError = true
         }

@@ -55,7 +55,12 @@ struct ProfileView: View {
         .sheet(isPresented: $showAddressSheet) {
             AddressSelectionView(
                 selectedAddress: .constant(nil),
-                addresses: addresses
+                addresses: addresses,
+                onRefresh: {
+                    Task {
+                        await loadAddresses()
+                    }
+                }
             )
         }
         .sheet(isPresented: $showPaymentSheet) {
@@ -203,9 +208,21 @@ struct ProfileView: View {
     
     private func loadAddresses() async {
         do {
-            let fetchedAddresses = try await OrderAPIService.shared.getAddresses()
+            let fetchedCustomerAddresses = try await CustomerService.shared.getCustomerAddresses()
+            
+            // CustomerAddress'i legacy Address'e dönüştür
+            let convertedAddresses = fetchedCustomerAddresses.map { customerAddress in
+                Address(
+                    id: customerAddress.id,
+                    title: customerAddress.name,
+                    fullAddress: customerAddress.formattedAddress,
+                    latitude: customerAddress.latitude,
+                    longitude: customerAddress.longitude
+                )
+            }
+            
             await MainActor.run {
-                self.addresses = fetchedAddresses
+                self.addresses = convertedAddresses
             }
         } catch {
             print("Adresler yüklenirken hata oluştu: \(error)")

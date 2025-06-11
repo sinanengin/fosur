@@ -96,6 +96,10 @@ class VehicleService: ObservableObject {
     @Published var vehicles: [VehicleData] = []
     @Published var isLoading = false
     
+    // Cache durumu
+    private var lastFetchTime: Date?
+    private let cacheTimeout: TimeInterval = 300 // 5 dakika
+    
     private init() {}
     
     // MARK: - Image Processing Helpers
@@ -214,6 +218,7 @@ class VehicleService: ObservableObject {
             
             await MainActor.run {
                 self.vehicles.append(vehicleResponse.data)
+                self.lastFetchTime = Date() // Cache'i güncelle
                 self.isLoading = false
             }
             
@@ -228,8 +233,17 @@ class VehicleService: ObservableObject {
     }
     
     // MARK: - Get Vehicles
-    func getVehicles() async throws -> [VehicleData] {
-        print("🚗 VehicleService: getVehicles başladı")
+    func getVehicles(forceRefresh: Bool = false) async throws -> [VehicleData] {
+        print("🚗 VehicleService: getVehicles başladı (forceRefresh: \(forceRefresh))")
+        
+        // Cache kontrolü - force refresh yoksa ve cache geçerliyse
+        if !forceRefresh, 
+           !vehicles.isEmpty,
+           let lastFetch = lastFetchTime,
+           Date().timeIntervalSince(lastFetch) < cacheTimeout {
+            print("✅ Cache'den \(vehicles.count) araç döndürülüyor")
+            return vehicles
+        }
         
         await MainActor.run { self.isLoading = true }
         
@@ -265,16 +279,24 @@ class VehicleService: ObservableObject {
             
             await MainActor.run {
                 self.vehicles = vehicles
+                self.lastFetchTime = Date()
                 self.isLoading = false
             }
             
-            print("✅ \(vehicles.count) araç başarıyla alındı")
+            print("✅ \(vehicles.count) araç başarıyla alındı ve cache'lendi")
             return vehicles
             
         } catch {
             await MainActor.run { self.isLoading = false }
-            print("❌ getVehicles Error: \(error)")
-            throw error
+            
+            // URLError cancelled hatasını farklı handle et
+            if let urlError = error as? URLError, urlError.code == .cancelled {
+                print("⚠️ getVehicles: Request cancelled")
+                throw VehicleError.networkError
+            } else {
+                print("❌ getVehicles Error: \(error)")
+                throw error
+            }
         }
     }
     
@@ -373,6 +395,7 @@ class VehicleService: ObservableObject {
             
             await MainActor.run {
                 self.vehicles.removeAll { $0.id == vehicleId }
+                self.lastFetchTime = Date() // Cache'i güncelle
                 self.isLoading = false
             }
             

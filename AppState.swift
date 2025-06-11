@@ -93,15 +93,21 @@ class AppState: ObservableObject {
     }
     
     // MARK: - Vehicle Management
-    func loadUserVehicles() async {
+    func loadUserVehicles(forceRefresh: Bool = false) async {
         guard isUserLoggedIn else {
             print("❌ Kullanıcı giriş yapmamış, araçlar yüklenemez")
             return
         }
         
+        // Cache varsa ve force refresh yoksa, mevcut araçları kullan
+        if !forceRefresh, let vehicles = currentUser?.vehicles, !vehicles.isEmpty {
+            print("✅ AppState: Cache'den \(vehicles.count) araç kullanılıyor")
+            return
+        }
+        
         do {
-            print("🚗 AppState: Kullanıcı araçları yükleniyor...")
-            let vehicleDataArray = try await vehicleService.getVehicles()
+            print("🚗 AppState: Kullanıcı araçları yükleniyor... (forceRefresh: \(forceRefresh))")
+            let vehicleDataArray = try await vehicleService.getVehicles(forceRefresh: forceRefresh)
             
             // VehicleData'yı Vehicle model'ine çevir
             let vehicles = vehicleDataArray.map { vehicleData in

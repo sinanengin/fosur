@@ -89,7 +89,12 @@ struct CallUsView: View {
         .sheet(isPresented: $showAddressSheet) {
             AddressSelectionView(
                 selectedAddress: $selectedAddress,
-                addresses: addresses
+                addresses: addresses,
+                onRefresh: {
+                    Task {
+                        await loadData()
+                    }
+                }
             )
         }
         .sheet(isPresented: $showServiceSheet) {
@@ -120,9 +125,9 @@ struct CallUsView: View {
             Task {
                 await loadData()
                 
-                // Giriş yapılmışsa araçları her seferinde yeniden yükle
+                // Giriş yapılmışsa araçları yükle (cache'den gelir)
                 if appState.isUserLoggedIn {
-                    await appState.loadUserVehicles()
+                    await appState.loadUserVehicles(forceRefresh: false)
                 }
             }
         }
@@ -139,18 +144,18 @@ struct CallUsView: View {
             if let vehicles = appState.currentUser?.vehicles {
                 if vehicles.isEmpty {
                     // Araç yok durumu
-                    VStack(spacing: 16) {
-                        VStack(spacing: 12) {
+                    VStack(spacing: 12) {
+                        VStack(spacing: 8) {
                             Image(systemName: "car")
-                                .font(.system(size: 40))
+                                .font(.system(size: 32))
                                 .foregroundColor(.secondary)
                             
                             Text("Henüz araç eklememişsiniz")
-                                .font(CustomFont.medium(size: 16))
+                                .font(CustomFont.medium(size: 14))
                                 .foregroundColor(.primary)
                             
                             Text("Araç eklemek için Araçlarım sekmesini kullanın")
-                                .font(CustomFont.regular(size: 14))
+                                .font(CustomFont.regular(size: 12))
                                 .foregroundColor(.secondary)
                                 .multilineTextAlignment(.center)
                         }
@@ -158,15 +163,16 @@ struct CallUsView: View {
                         Button("Araç Ekle") {
                             appState.tabSelection = .myVehicles
                         }
-                        .font(CustomFont.medium(size: 14))
+                        .font(CustomFont.medium(size: 12))
                         .foregroundColor(.logo)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 10)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
                         .background(Color.logo.opacity(0.1))
-                        .cornerRadius(8)
+                        .cornerRadius(6)
                     }
-                    .padding(.vertical, 30)
-                    .padding(.horizontal, 20)
+                    .padding(16)
+                    .frame(height: 160)
+                    .frame(maxWidth: .infinity)
                     .background(
                         RoundedRectangle(cornerRadius: 24)
                             .fill(Color.white)
@@ -259,19 +265,41 @@ struct CallUsView: View {
     private func loadData() async {
         isLoading = true
         do {
-            // Yeni OrderAPIService kullanarak veri çek
-            async let addressesTask = OrderAPIService.shared.getAddresses()
-            async let servicesTask = OrderAPIService.shared.getServices()
+            // API'lerden veri çek
+            async let addressesTask = CustomerService.shared.getCustomerAddresses()
+            async let servicesTask = ServicesService.shared.fetchWashPackages()
             
-            let (fetchedAddresses, fetchedServices) = try await (addressesTask, servicesTask)
+            let (fetchedCustomerAddresses, fetchedServicesData) = try await (addressesTask, servicesTask)
+            
+            // CustomerAddress'i legacy Address'e dönüştür
+            let convertedAddresses = fetchedCustomerAddresses.map { customerAddress in
+                Address(
+                    id: customerAddress.id,
+                    title: customerAddress.name,
+                    fullAddress: customerAddress.formattedAddress,
+                    latitude: customerAddress.latitude,
+                    longitude: customerAddress.longitude
+                )
+            }
+            
+            // ServiceData'yı Service'e dönüştür
+            let convertedServices = fetchedServicesData.map { Service(from: $0) }
             
             await MainActor.run {
-                self.addresses = fetchedAddresses
-                self.services = fetchedServices
+                self.addresses = convertedAddresses
+                self.services = convertedServices
                 self.isLoading = false
+                print("✅ CallUsView: \(convertedAddresses.count) adres ve \(convertedServices.count) hizmet yüklendi")
+                print("📍 Adresler: \(convertedAddresses.map { $0.title })")
+                print("📋 Hizmetler: \(convertedServices.map { $0.title })")
             }
         } catch {
-            print("Veri yüklenirken hata oluştu: \(error)")
+            // URLError cancelled hatasını loglama
+            if let urlError = error as? URLError, urlError.code == .cancelled {
+                print("⚠️ Request cancelled - normal durum")
+            } else {
+                print("❌ Veri yüklenirken hata oluştu: \(error)")
+            }
             await MainActor.run {
                 self.isLoading = false
             }

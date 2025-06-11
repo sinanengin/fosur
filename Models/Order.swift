@@ -102,7 +102,25 @@ struct Service: Identifiable, Codable, Hashable {
     let title: String
     let description: String
     let price: Double
-    let category: ServiceCategory
+    let images: [String]
+    
+    // ServiceData'dan Service'e dönüştürme için init
+    init(from serviceData: ServiceData) {
+        self.id = serviceData.id
+        self.title = serviceData.name
+        self.description = serviceData.details
+        self.price = serviceData.price
+        self.images = serviceData.images
+    }
+    
+    // Mevcut Service'ler için standart init
+    init(id: String, title: String, description: String, price: Double, images: [String] = []) {
+        self.id = id
+        self.title = title
+        self.description = description
+        self.price = price
+        self.images = images
+    }
     
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
@@ -111,10 +129,4 @@ struct Service: Identifiable, Codable, Hashable {
     static func == (lhs: Service, rhs: Service) -> Bool {
         lhs.id == rhs.id
     }
-}
-
-enum ServiceCategory: String, Codable, Hashable, CaseIterable {
-    case interiorCleaning = "İç Temizlik"
-    case exteriorCleaning = "Dış Temizlik"
-    case polish = "Pasta Cila"
 }

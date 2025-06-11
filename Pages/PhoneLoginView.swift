@@ -573,9 +573,9 @@ struct PhoneLoginView: View {
                         
                         print("✅ Müşteri bulundu, giriş yapıldı")
                         
-                        // Araçları yükle
+                        // Araçları yükle (fresh login)
                         Task {
-                            await appState.loadUserVehicles()
+                            await appState.loadUserVehicles(forceRefresh: true)
                         }
                         
                         // Başarı animasyonu ile çıkış
@@ -706,9 +706,9 @@ struct PhoneLoginView: View {
                     
                     print("✅ AppState güncellendi, ana sayfaya yönlendiriliyor")
                     
-                    // Araçları yükle
+                    // Araçları yükle (fresh account)
                     Task {
-                        await appState.loadUserVehicles()
+                        await appState.loadUserVehicles(forceRefresh: true)
                     }
                     
                     // Başarı animasyonu ile çıkış
