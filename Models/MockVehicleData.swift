@@ -152,5 +152,4 @@ let vehicleBrands: [MockVehicleBrand] = [
     MockVehicleBrand(name: "TOGG", imageName: "togg_logo", models: [
         "T10F", "T10S", "T10X"
     ])
-]
-
+] 

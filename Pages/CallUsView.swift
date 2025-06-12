@@ -94,7 +94,8 @@ struct CallUsView: View {
                     Task {
                         await loadData()
                     }
-                }
+                },
+                mode: .selection
             )
         }
         .sheet(isPresented: $showServiceSheet) {
@@ -125,9 +126,9 @@ struct CallUsView: View {
             Task {
                 await loadData()
                 
-                // Giriş yapılmışsa araçları yükle (cache'den gelir)
+                // Giriş yapılmışsa araçları yükle (her zaman yenile)
                 if appState.isUserLoggedIn {
-                    await appState.loadUserVehicles(forceRefresh: false)
+                    await appState.loadUserVehicles(forceRefresh: true)
                 }
             }
         }

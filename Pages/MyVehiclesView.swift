@@ -7,7 +7,7 @@ struct MyVehiclesView: View {
     @State private var errorMessage = ""
 
     var body: some View {
-        VStack(spacing: 0) {
+            VStack(spacing: 0) {
                 headerView
 
                 if !appState.isUserLoggedIn {
@@ -21,8 +21,8 @@ struct MyVehiclesView: View {
             .background(Color("BackgroundColor"))
             .ignoresSafeArea(edges: .bottom)
             .onAppear {
-                // Sadece ilk seferinde veya araçlar boşsa çek
-                if appState.isUserLoggedIn && vehicleService.vehicles.isEmpty {
+                // Her zaman araçları yenile
+                if appState.isUserLoggedIn {
                     Task {
                         await loadVehicles()
                     }
@@ -147,7 +147,7 @@ struct MyVehiclesView: View {
     // MARK: - Helper Methods
     private func loadVehicles() async {
         do {
-            try await vehicleService.getVehicles()
+            try await vehicleService.getVehicles(forceRefresh: true)
         } catch {
             // URLError cancelled hatasını gösterme
             if let urlError = error as? URLError, urlError.code == .cancelled {

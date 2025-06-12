@@ -286,8 +286,10 @@ struct ServiceGridCard: View {
 }
 
 #Preview {
+    @Previewable @State var selectedServices: Set<Service> = []
+    
     ServiceSelectionView(
-        selectedServices: .constant([]),
+        selectedServices: $selectedServices,
         services: []
     )
 } 

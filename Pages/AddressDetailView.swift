@@ -6,6 +6,7 @@ struct AddressDetailView: View {
     @Environment(\.dismiss) var dismiss
     let address: Address
     let onAddressUpdated: (() -> Void)?
+    let onDismiss: (() -> Void)?
     @State private var addressName: String
     @State private var selectedCoordinate: CLLocationCoordinate2D
     @State private var region: MKCoordinateRegion
@@ -21,9 +22,10 @@ struct AddressDetailView: View {
     @State private var searchResults: [MKMapItem] = []
     @State private var isSearching = false
     
-    init(address: Address, onAddressUpdated: (() -> Void)? = nil) {
+    init(address: Address, onAddressUpdated: (() -> Void)? = nil, onDismiss: (() -> Void)? = nil) {
         self.address = address
         self.onAddressUpdated = onAddressUpdated
+        self.onDismiss = onDismiss
         self._addressName = State(initialValue: address.title)
         self._selectedCoordinate = State(initialValue: CLLocationCoordinate2D(latitude: address.latitude, longitude: address.longitude))
         self._currentFormattedAddress = State(initialValue: address.fullAddress)
@@ -63,7 +65,8 @@ struct AddressDetailView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
-                        dismiss()
+                        onDismiss?()  // Parent'a bildir
+                        dismiss()     // Sheet'i kapat
                     } label: {
                         Image(systemName: "xmark")
                             .font(.system(size: 16, weight: .semibold))
@@ -84,7 +87,8 @@ struct AddressDetailView: View {
         }
         .alert(successMessage, isPresented: $showSuccessMessage) {
             Button("Tamam") {
-                dismiss()
+                onDismiss?()  // Parent'a bildir
+                dismiss()     // Sheet'i kapat
             }
         }
         .alert("Hata", isPresented: $showErrorMessage) {

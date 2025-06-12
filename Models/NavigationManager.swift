@@ -1,6 +1,55 @@
 import Foundation
 import SwiftUI
 
+// Local Order model - NavigationManager için
+struct LocalOrder: Identifiable, Codable {
+    let id: UUID
+    let vehicleId: UUID
+    let vehicle: Vehicle
+    let address: Address
+    let selectedServices: [Service]
+    let serviceDate: Date
+    let serviceTime: String
+    let totalAmount: Double
+    let travelFee: Double
+    let status: String
+    let createdAt: Date
+    
+    // Convenience initializer
+    init(vehicleId: UUID, vehicle: Vehicle, address: Address, selectedServices: [Service], serviceDate: Date, serviceTime: String, totalAmount: Double, travelFee: Double = 0.0, status: String = "draft") {
+        self.id = UUID()
+        self.vehicleId = vehicleId
+        self.vehicle = vehicle
+        self.address = address
+        self.selectedServices = selectedServices
+        self.serviceDate = serviceDate
+        self.serviceTime = serviceTime
+        self.totalAmount = totalAmount
+        self.travelFee = travelFee
+        self.status = status
+        self.createdAt = Date()
+    }
+    
+    // Full initializer
+    init(id: UUID, vehicleId: UUID, vehicle: Vehicle, address: Address, selectedServices: [Service], serviceDate: Date, serviceTime: String, totalAmount: Double, travelFee: Double, status: String, createdAt: Date) {
+        self.id = id
+        self.vehicleId = vehicleId
+        self.vehicle = vehicle
+        self.address = address
+        self.selectedServices = selectedServices
+        self.serviceDate = serviceDate
+        self.serviceTime = serviceTime
+        self.totalAmount = totalAmount
+        self.travelFee = travelFee
+        self.status = status
+        self.createdAt = createdAt
+    }
+    
+    var grandTotal: Double {
+        return totalAmount + travelFee
+    }
+}
+
 class NavigationManager: ObservableObject {
     @Published var navigationPath = NavigationPath()
     @Published var selectedBrand: MockVehicleBrand? = nil
@@ -8,7 +57,7 @@ class NavigationManager: ObservableObject {
     @Published var selectedCityCode: String = ""
     @Published var presentedSheet: SheetDestination? = nil
     @Published var presentedFullScreenCover: FullScreenCoverDestination? = nil
-    @Published var currentOrder: Order? = nil
+    @Published var currentOrder: LocalOrder? = nil
     
     func navigateTo<T: Hashable>(_ destination: T) {
         navigationPath.append(destination)
@@ -41,7 +90,7 @@ class NavigationManager: ObservableObject {
     
     func startOrderFlow(vehicle: Vehicle, address: Address, services: [Service], appState: AppState) {
         let totalAmount = services.reduce(0) { $0 + $1.price }
-        currentOrder = Order(
+        currentOrder = LocalOrder(
             vehicleId: vehicle.id,
             vehicle: vehicle,
             address: address,
@@ -86,8 +135,8 @@ class NavigationManager: ObservableObject {
     }
     
     func updateOrderDateTime(date: Date, time: String) {
-        guard var order = currentOrder else { return }
-        currentOrder = Order(
+        guard let order = currentOrder else { return }
+        currentOrder = LocalOrder(
             id: order.id,
             vehicleId: order.vehicleId,
             vehicle: order.vehicle,

@@ -9,14 +9,14 @@ struct ModelSelectionView: View {
         NavigationStack {
             List {
                 ForEach(brand.models.sorted(), id: \.self) { model in
-                    Button(action: {
+                Button(action: {
                         onSelect(model)
-                        dismiss()
-                    }) {
+                    dismiss()
+                }) {
                         HStack {
                             Text(model)
-                                .foregroundColor(.primary)
-                            Spacer()
+                        .foregroundColor(.primary)
+                Spacer()
                             Image(systemName: "chevron.right")
                                 .foregroundColor(.gray)
                         }

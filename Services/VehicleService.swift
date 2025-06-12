@@ -217,12 +217,15 @@ class VehicleService: ObservableObject {
             let vehicleResponse = try JSONDecoder().decode(VehicleResponse.self, from: data)
             
             await MainActor.run {
+                // Yeni aracı cache'e ekle
                 self.vehicles.append(vehicleResponse.data)
-                self.lastFetchTime = Date() // Cache'i güncelle
+                // Cache'i invalidate et ki bir sonraki getVehicles çağrısında API'den yeniden çeksin
+                self.lastFetchTime = nil
                 self.isLoading = false
             }
             
             print("✅ Araç başarıyla oluşturuldu: \(vehicleResponse.data.id)")
+            print("🔄 Cache invalidate edildi - bir sonraki getVehicles API'den çekecek")
             return vehicleResponse.data
             
         } catch {
@@ -646,5 +649,70 @@ class VehicleService: ObservableObject {
             print("❌ deleteAllVehicleImages Error: \(error)")
             throw error
         }
+    }
+    
+    // MARK: - Get Vehicle Details by Car ID
+    func getVehicleDetails(car: String) async throws -> Vehicle {
+        print("🚗 VehicleService: getVehicleDetails başladı - Car ID: \(car)")
+        
+        // Önce cache'den kontrol et
+        if let cachedVehicle = vehicles.first(where: { "car:\($0.id)" == car }) {
+            print("✅ Cache'den araç bulundu: \(cachedVehicle.brand.name) \(cachedVehicle.model)")
+            return convertVehicleDataToVehicle(cachedVehicle)
+        }
+        
+        // Cache'de yoksa API'den çek
+        let carId = car.replacingOccurrences(of: "car:", with: "")
+        guard let url = URL(string: "\(baseURL)/cars/\(carId)") else {
+            throw VehicleError.networkError
+        }
+        
+        do {
+            var request = URLRequest(url: url)
+            request.httpMethod = "GET"
+            
+            // Auth headers ekle
+            let headers = authService.getAuthHeaders()
+            for (key, value) in headers {
+                request.setValue(value, forHTTPHeaderField: key)
+            }
+            
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw VehicleError.invalidResponse
+            }
+            
+            print("📊 HTTP Status Code: \(httpResponse.statusCode)")
+            
+            if httpResponse.statusCode == 200 {
+                let vehicleResponse = try JSONDecoder().decode(VehicleResponse.self, from: data)
+                let vehicle = convertVehicleDataToVehicle(vehicleResponse.data)
+                
+                print("✅ Araç detayları alındı: \(vehicle.brand) \(vehicle.model)")
+                return vehicle
+            } else {
+                throw VehicleError.vehicleNotFound
+            }
+        } catch {
+            print("❌ getVehicleDetails Error: \(error)")
+            throw error
+        }
+    }
+    
+    // VehicleData'yı Vehicle model'ine çevir
+    private func convertVehicleDataToVehicle(_ vehicleData: VehicleData) -> Vehicle {
+        return Vehicle(
+            id: UUID(),
+            apiId: vehicleData.id,
+            brand: vehicleData.brand.name,
+            model: vehicleData.model,
+            plate: vehicleData.plate,
+            type: .automobile,
+            images: vehicleData.images,
+            userId: UUID(),
+            lastServices: [],
+            name: vehicleData.name
+        )
     }
 }

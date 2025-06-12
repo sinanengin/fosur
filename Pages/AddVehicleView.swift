@@ -852,18 +852,35 @@ struct AddVehicleView: View {
             allPhotos.append(contentsOf: selectedInteriorPhotos)
             allPhotos.append(contentsOf: selectedExteriorPhotos)
             
-            // 3. Upload all photos in a single batch
+            // 3. Upload photos one by one (more reliable than batch)
             if !allPhotos.isEmpty {
-                let _ = try await vehicleService.uploadVehicleImages(
-                    vehicleId: vehicleData.id,
-                    images: allPhotos
-                )
-                print("✅ Toplam \(allPhotos.count) fotoğraf yüklendi (İç: \(selectedInteriorPhotos.count), Dış: \(selectedExteriorPhotos.count))")
+                print("📸 \(allPhotos.count) fotoğraf tek tek yüklenecek...")
+                var uploadedCount = 0
+                
+                for (index, photo) in allPhotos.enumerated() {
+                    do {
+                        let _ = try await vehicleService.uploadVehicleImage(
+                            vehicleId: vehicleData.id,
+                            image: photo
+                        )
+                        uploadedCount += 1
+                        print("✅ Fotoğraf \(index + 1)/\(allPhotos.count) yüklendi")
+                    } catch {
+                        print("❌ Fotoğraf \(index + 1) yüklenemedi: \(error)")
+                        // Devam et, diğer fotoğrafları yüklemeye çalış
+                    }
+                }
+                
+                print("✅ Toplam \(uploadedCount)/\(allPhotos.count) fotoğraf yüklendi")
             }
+            
+            // 4. AppState'i güncelle - araç listesini yenile
+            await appState.loadUserVehicles(forceRefresh: true)
             
             await MainActor.run {
                 isLoading = false
                 currentStep = .complete
+                print("✅ Araç başarıyla oluşturuldu ve AppState güncellendi")
             }
             
         } catch {
@@ -871,6 +888,7 @@ struct AddVehicleView: View {
                 isLoading = false
                 errorMessage = error.localizedDescription
                 showError = true
+                print("❌ Araç oluşturma hatası: \(error)")
             }
         }
     }
@@ -878,11 +896,18 @@ struct AddVehicleView: View {
     private func loadPhotos(from items: [PhotosPickerItem], isInterior: Bool) {
         print("📸 loadPhotos başladı - \(isInterior ? "İç" : "Dış") fotoğraflar: \(items.count)")
         
+        // Loading state'i başlat
+        Task { @MainActor in
+            isLoading = true
+        }
+        
         Task {
             var images: [UIImage] = []
+            var successCount = 0
+            var failCount = 0
             
             for (index, item) in items.enumerated() {
-                print("📸 Fotoğraf \(index + 1) yükleniyor...")
+                print("📸 Fotoğraf \(index + 1)/\(items.count) yükleniyor...")
                 
                 do {
                     if let data = try await item.loadTransferable(type: Data.self) {
@@ -891,18 +916,22 @@ struct AddVehicleView: View {
                         if let image = UIImage(data: data) {
                             print("📸 UIImage oluşturuldu: \(image.size)")
                             images.append(image)
+                            successCount += 1
                         } else {
                             print("❌ UIImage oluşturulamadı")
+                            failCount += 1
                         }
                     } else {
                         print("❌ Data yüklenemedi")
+                        failCount += 1
                     }
                 } catch {
                     print("❌ Fotoğraf yükleme hatası: \(error)")
+                    failCount += 1
                 }
             }
             
-            print("📸 Toplam \(images.count) fotoğraf yüklendi")
+            print("📸 Fotoğraf yükleme tamamlandı - Başarılı: \(successCount), Başarısız: \(failCount)")
             
             await MainActor.run {
                 if isInterior {
@@ -911,6 +940,15 @@ struct AddVehicleView: View {
                 } else {
                     selectedExteriorPhotos = images
                     print("📸 Dış mekan fotoğrafları set edildi: \(selectedExteriorPhotos.count)")
+                }
+                
+                // Loading state'i bitir
+                isLoading = false
+                
+                // Hata varsa kullanıcıya bildir
+                if failCount > 0 {
+                    errorMessage = "\(failCount) fotoğraf yüklenemedi. Lütfen tekrar deneyin."
+                    showError = true
                 }
             }
         }

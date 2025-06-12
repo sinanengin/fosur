@@ -2,10 +2,8 @@ import SwiftUI
 
 struct OrderSummaryView: View {
     @EnvironmentObject var appState: AppState
-    
-    private var order: Order? {
-        appState.navigationManager.currentOrder
-    }
+    @State private var showError = false
+    @State private var errorMessage = ""
     
     var body: some View {
         NavigationView {
@@ -27,7 +25,7 @@ struct OrderSummaryView: View {
                         }
                         .padding(.top, 20)
                         
-                        if let order = order {
+                        if let order = appState.navigationManager.currentOrder {
                             VStack(spacing: 20) {
                                 // Araç Bilgileri
                                 vehicleCard(order.vehicle)
@@ -92,7 +90,7 @@ struct OrderSummaryView: View {
         .background(Color("BackgroundColor"))
     }
     
-    private func vehicleCard(_ vehicle: Vehicle?) -> some View {
+    private func vehicleCard(_ vehicle: Vehicle) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Image(systemName: "car.fill")
@@ -106,45 +104,43 @@ struct OrderSummaryView: View {
                 Spacer()
             }
             
-            if let vehicle = vehicle {
-                HStack(spacing: 16) {
-                    // Araç Görseli
-                    if let vehicleImage = vehicle.images.first {
-                        AsyncImage(url: URL(string: vehicleImage.url)) { image in
-                            image
-                                .resizable()
-                                .scaledToFill()
-                        } placeholder: {
-                            Image("temp_car")
-                                .resizable()
-                                .scaledToFill()
-                        }
-                        .frame(width: 80, height: 80)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                    } else {
+            HStack(spacing: 16) {
+                // Araç Görseli
+                if let vehicleImage = vehicle.images.first {
+                    AsyncImage(url: URL(string: vehicleImage.url)) { image in
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    } placeholder: {
                         Image("temp_car")
                             .resizable()
                             .scaledToFill()
-                            .frame(width: 80, height: 80)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
-                    
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("\(vehicle.brand) \(vehicle.model)")
-                            .font(CustomFont.bold(size: 16))
-                            .foregroundColor(.primary)
-                        
-                        Text(vehicle.plate)
-                            .font(CustomFont.medium(size: 14))
-                            .foregroundColor(.secondary)
-                        
-                        Text(vehicle.type.displayName)
-                            .font(CustomFont.regular(size: 12))
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    Spacer()
+                    .frame(width: 80, height: 80)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                } else {
+                    Image("temp_car")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 80, height: 80)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("\(vehicle.brand) \(vehicle.model)")
+                        .font(CustomFont.bold(size: 16))
+                        .foregroundColor(.primary)
+                    
+                    Text(vehicle.plate)
+                        .font(CustomFont.medium(size: 14))
+                        .foregroundColor(.secondary)
+                    
+                    Text(vehicle.type.displayName)
+                        .font(CustomFont.regular(size: 12))
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
             }
         }
         .padding(20)
@@ -184,7 +180,7 @@ struct OrderSummaryView: View {
         .shadow(color: Color.black.opacity(0.08), radius: 15, x: 0, y: 8)
     }
     
-    private func serviceTimeCard(_ order: Order) -> some View {
+    private func serviceTimeCard(_ order: LocalOrder) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Image(systemName: "clock.fill")
@@ -275,7 +271,7 @@ struct OrderSummaryView: View {
         .shadow(color: Color.black.opacity(0.08), radius: 15, x: 0, y: 8)
     }
     
-    private func priceCard(_ order: Order) -> some View {
+    private func priceCard(_ order: LocalOrder) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Image(systemName: "creditcard.fill")
@@ -338,14 +334,24 @@ struct OrderSummaryView: View {
     
     private var continueButton: some View {
         Button(action: {
-            // Ödeme sayfasına geç
-            appState.navigationManager.showPaymentScreen(appState: appState)
+            // PaymentView'e yönlendir
+            DispatchQueue.main.async {
+                appState.showOrderSummary = false
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                appState.showPayment = true
+            }
         }) {
             HStack {
-                Text("Ödeme Adımına Devam Et")
+                Text("Ödemeyi Yap")
                     .font(CustomFont.bold(size: 18))
                 
-                Image(systemName: "arrow.right")
+                if let currentOrder = appState.navigationManager.currentOrder {
+                    Text("(\(String(format: "%.2f ₺", currentOrder.grandTotal)))")
+                        .font(CustomFont.bold(size: 16))
+                }
+                
+                Image(systemName: "creditcard.fill")
                     .font(.system(size: 16, weight: .bold))
             }
             .foregroundColor(.white)
@@ -355,48 +361,12 @@ struct OrderSummaryView: View {
             .cornerRadius(16)
             .shadow(color: Color.logo.opacity(0.3), radius: 8, x: 0, y: 4)
         }
+        .alert("Hata", isPresented: $showError) {
+            Button("Tamam") { }
+        } message: {
+            Text(errorMessage)
+        }
     }
 }
 
-#Preview {
-    let appState = AppState()
-    appState.setLoggedInUser()
-    
-    // Mock order oluştur
-    let mockVehicle = Vehicle(
-        id: UUID(),
-        brand: "BMW",
-        model: "320i",
-        plate: "34 ABC 123",
-        type: .automobile,
-        images: [],
-        userId: UUID(),
-        lastServices: []
-    )
-    
-    let mockAddress = Address(
-        id: "1",
-        title: "Ev",
-        fullAddress: "Atatürk Mah. Cumhuriyet Cad. No:123 D:4 Kadıköy/İstanbul",
-        latitude: 40.9909,
-        longitude: 29.0233
-    )
-    
-    let mockServices = [
-        Service(id: "1", title: "İç Temizlik", description: "Detaylı iç temizlik hizmeti", price: 299.99),
-        Service(id: "2", title: "Dış Temizlik", description: "Detaylı dış temizlik hizmeti", price: 199.99)
-    ]
-    
-    appState.navigationManager.currentOrder = Order(
-        vehicleId: mockVehicle.id,
-        vehicle: mockVehicle,
-        address: mockAddress,
-        selectedServices: mockServices,
-        serviceDate: Date(),
-        serviceTime: "14:30",
-        totalAmount: 499.98
-    )
-    
-    return OrderSummaryView()
-        .environmentObject(appState)
-} 
+ 

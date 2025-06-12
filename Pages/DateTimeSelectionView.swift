@@ -1,5 +1,12 @@
 import SwiftUI
 
+// MARK: - TimeSlot Model
+struct TimeSlot: Identifiable {
+    let id: String
+    let time: String
+    let isAvailable: Bool
+}
+
 struct DateTimeSelectionView: View {
     @EnvironmentObject var appState: AppState
     @State private var selectedDate = Date()
@@ -238,8 +245,20 @@ struct DateTimeSelectionView: View {
     }
     
     private func generateTimeSlots() -> [TimeSlot] {
-        // Mock data'dan slot'ları al
-        return generateMockTimeSlots(for: selectedDate)
+        // TODO: Gerçek API'den müsait saatleri al
+        // Şimdilik temel saatler göster - API entegrasyonu yapılacak
+        var slots: [TimeSlot] = []
+        
+        // 09:00 - 18:00 arası yarım saat aralıklarla
+        for hour in 9...17 {
+            for minute in [0, 30] {
+                let timeString = String(format: "%02d:%02d", hour, minute)
+                // Tüm saatler müsait olarak gösterilir, API'den gerçek bilgi gelecek
+                slots.append(TimeSlot(id: UUID().uuidString, time: timeString, isAvailable: true))
+            }
+        }
+        
+        return slots
     }
 }
 

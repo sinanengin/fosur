@@ -62,13 +62,13 @@ struct NewsView: View {
                             }
                             .padding(.top, 60)
                         } else {
-                            ForEach(filteredNews) { news in
-                                NewsCardView(news: news)
-                                    .onTapGesture {
-                                        selectedNews = news
-                                        showDetail = true
+                        ForEach(filteredNews) { news in
+                            NewsCardView(news: news)
+                                .onTapGesture {
+                                    selectedNews = news
+                                    showDetail = true
                                     }
-                            }
+                                }
                         }
                     }
                     .padding(.horizontal)

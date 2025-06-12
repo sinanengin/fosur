@@ -213,11 +213,11 @@ struct PhoneLoginView: View {
                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                 .scaleEffect(0.8)
                         } else {
-                            Text("Doğrulama Kodu Gönder")
-                                .font(CustomFont.bold(size: 18))
-                            
-                            Image(systemName: "arrow.right")
-                                .font(.system(size: 16, weight: .bold))
+                        Text("Doğrulama Kodu Gönder")
+                            .font(CustomFont.bold(size: 18))
+                        
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 16, weight: .bold))
                         }
                     }
                     .foregroundColor(.white)
@@ -297,11 +297,11 @@ struct PhoneLoginView: View {
                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                 .scaleEffect(0.8)
                         } else {
-                            Text("Devam Et")
-                                .font(CustomFont.bold(size: 18))
-                            
-                            Image(systemName: "arrow.right")
-                                .font(.system(size: 16, weight: .bold))
+                        Text("Devam Et")
+                            .font(CustomFont.bold(size: 18))
+                        
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 16, weight: .bold))
                         }
                     }
                     .foregroundColor(.white)
@@ -434,11 +434,11 @@ struct PhoneLoginView: View {
                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                 .scaleEffect(0.8)
                         } else {
-                            Text("Hesabımı Oluştur")
-                                .font(CustomFont.bold(size: 18))
-                            
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 16, weight: .bold))
+                        Text("Hesabımı Oluştur")
+                            .font(CustomFont.bold(size: 18))
+                        
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 16, weight: .bold))
                         }
                     }
                     .foregroundColor(.white)
@@ -693,16 +693,16 @@ struct PhoneLoginView: View {
                     
                     // AppState'i güncelle - artık tam bilgilerle
                     appState.currentUser = User(
-                        id: UUID(),
-                        name: name,
-                        surname: surname,
-                        email: mail,
+            id: UUID(),
+            name: name,
+            surname: surname,
+            email: mail,
                         phoneNumber: authService.currentUser?.phoneNumber ?? "",
-                        profileImage: nil,
-                        vehicles: []
-                    )
-                    appState.isUserLoggedIn = true
-                    appState.tabSelection = .callUs
+            profileImage: nil,
+            vehicles: []
+        )
+        appState.isUserLoggedIn = true
+        appState.tabSelection = .callUs
                     
                     print("✅ AppState güncellendi, ana sayfaya yönlendiriliyor")
                     
@@ -710,10 +710,10 @@ struct PhoneLoginView: View {
                     Task {
                         await appState.loadUserVehicles(forceRefresh: true)
                     }
-                    
-                    // Başarı animasyonu ile çıkış
-                    withAnimation(.easeInOut(duration: 0.5)) {
-                        dismiss()
+        
+        // Başarı animasyonu ile çıkış
+        withAnimation(.easeInOut(duration: 0.5)) {
+            dismiss()
                     }
                 }
             } catch {

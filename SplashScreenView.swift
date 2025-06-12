@@ -8,11 +8,11 @@ struct SplashScreenView: View {
         ZStack {
             if appState.isLoadingAuth {
                 // Splash screen - auto-login kontrolü yapılırken
-                VStack {
+            VStack {
                     Image("fosur_logo")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 200, height: 200)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 200, height: 200)
                         .opacity(opacity)
                     
                     // Loading indicator

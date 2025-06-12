@@ -31,22 +31,22 @@ struct NewsDetailView: View {
                         .scaledToFill()
                 } placeholder: {
                     Image("news_placeholder")
-                        .resizable()
-                        .scaledToFill()
+                    .resizable()
+                    .scaledToFill()
                 }
-                .frame(height: 220)
-                .frame(maxWidth: .infinity)
-                .clipped()
-                .overlay(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color.black.opacity(0.18),
-                            Color.clear
-                        ]),
-                        startPoint: .top,
-                        endPoint: .bottom
+                    .frame(height: 220)
+                    .frame(maxWidth: .infinity)
+                    .clipped()
+                    .overlay(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color.black.opacity(0.18),
+                                Color.clear
+                            ]),
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
                     )
-                )
 
                 // İçerik kutusu
                 VStack(alignment: .leading, spacing: 20) {
@@ -78,10 +78,10 @@ struct NewsDetailView: View {
                         }
                     } else {
                         Text(currentNews.title)
-                            .font(CustomFont.regular(size: 16))
-                            .foregroundColor(.primary)
-                            .lineSpacing(5)
-                            .fixedSize(horizontal: false, vertical: true)
+                        .font(CustomFont.regular(size: 16))
+                        .foregroundColor(.primary)
+                        .lineSpacing(5)
+                        .fixedSize(horizontal: false, vertical: true)
                     }
                     // Kategori bilgisi
                     HStack {
@@ -141,15 +141,16 @@ struct NewsDetailView: View {
 
 // MARK: - Preview
 #Preview {
+    // Preview için temel news objesi
     NewsDetailView(news: AnnouncementData(
-        resourceUrn: "announcement:sample123",
-        type: "campaign",
-        date: "2025-06-09T11:14:11.887Z",
-        title: "Yeni Hizmetlerimiz",
-        description: "Foşur olarak müşterilerimize daha iyi hizmet verebilmek için yeni hizmetlerimizi duyurmaktan mutluluk duyarız. Artık araçlarınızı daha uygun fiyatlarla ve daha kısa sürede temizleyebileceksiniz.",
-        id: "sample123",
-        images: ["news_placeholder"],
-        state: "created",
+        resourceUrn: "preview",
+        type: "announcement",
+        date: "2025-06-09T12:00:00Z",
+        title: "Preview Title",
+        description: "Preview Description",
+        id: "preview-id",
+        images: [],
+        state: "active",
         domain: "announcement"
     ))
 }

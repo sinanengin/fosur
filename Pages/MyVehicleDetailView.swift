@@ -153,7 +153,7 @@ struct MyVehicleDetailView: View {
                             .foregroundColor(.secondary)
                     }
                 }
-                
+
                 Spacer()
             }
         }

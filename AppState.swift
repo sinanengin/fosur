@@ -150,6 +150,41 @@ class AppState: ObservableObject {
         )
     }
 
+    // MARK: - User Data Management
+    func loadUserData() async {
+        guard isUserLoggedIn else {
+            print("❌ Kullanıcı giriş yapmamış, user data yüklenemez")
+            return
+        }
+        
+        // TODO: Gerçek user API'si hazır olduğunda kullanılacak
+        // Şimdilik AuthService'ten gelen bilgileri kullan
+        print("📋 AppState: User data yükleniyor...")
+        
+        // AuthService'ten user bilgilerini al
+        if let userDetails = authService.currentUser {
+            do {
+                // Customer Service'ten detaylı bilgileri al
+                let customers = try await CustomerService.shared.searchCustomers(userId: userDetails.id)
+                
+                await MainActor.run {
+                    if let customer = customers.first {
+                        self.currentUser?.name = customer.name.givenName
+                        self.currentUser?.surname = customer.name.lastName
+                        self.currentUser?.email = customer.email ?? ""
+                        self.currentUser?.phoneNumber = userDetails.phoneNumber
+                        
+                        print("✅ User data güncellendi")
+                        print("👤 Ad Soyad: \(customer.name.givenName) \(customer.name.lastName)")
+                        print("📧 Email: \(customer.email ?? "N/A")")
+                    }
+                }
+            } catch {
+                print("❌ User data yüklenirken hata: \(error)")
+            }
+        }
+    }
+
     func setGuestUser() {
         self.isUserLoggedIn = false
         self.currentUser = User(
@@ -165,45 +200,22 @@ class AppState: ObservableObject {
 
     func setLoggedInUser() {
         self.isUserLoggedIn = true
+        // TODO: Gerçek kullanıcı bilgileri API'den gelecek
+        // Şimdilik temel user objesi oluşturulur, vehiclelar API'den yüklenir
         self.currentUser = User(
             id: UUID(),
-            name: "Deneme",
-            surname: "Kullanıcı",
-            email: "deneme@fosur.com",
-            phoneNumber: "5551234567",
+            name: "Kullanıcı",
+            surname: "",
+            email: "",
+            phoneNumber: "",
             profileImage: nil,
-            vehicles: [
-                Vehicle(
-                    id: UUID(),
-                    brand: "BMW",
-                    model: "320i",
-                    plate: "34 ABC 123",
-                    type: .automobile,
-                    images: [VehicleImage(id: UUID().uuidString, url: "", filename: "temp_car", contentType: "image/jpeg", size: 0, isCover: false, uploadedAt: "")],
-                    userId: UUID(),
-                    lastServices: []
-                ),
-                Vehicle(
-                    id: UUID(),
-                    brand: "Mercedes",
-                    model: "C200",
-                    plate: "34 XYZ 456",
-                    type: .automobile,
-                    images: [VehicleImage(id: UUID().uuidString, url: "", filename: "temp_car", contentType: "image/jpeg", size: 0, isCover: false, uploadedAt: "")],
-                    userId: UUID(),
-                    lastServices: []
-                ),
-                Vehicle(
-                    id: UUID(),
-                    brand: "Renault",
-                    model: "Clio",
-                    plate: "06 DEF 789",
-                    type: .automobile,
-                    images: [VehicleImage(id: UUID().uuidString, url: "", filename: "temp_car", contentType: "image/jpeg", size: 0, isCover: false, uploadedAt: "")],
-                    userId: UUID(),
-                    lastServices: []
-                )
-            ]
+            vehicles: [] // Araçlar API'den ayrı olarak yüklenecek
         )
+        
+        // Kullanıcı bilgilerini ve araçları API'den yükle
+        Task {
+            await loadUserData()
+            await loadUserVehicles(forceRefresh: true)
+        }
     }
 }

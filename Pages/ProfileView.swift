@@ -4,10 +4,10 @@ struct ProfileView: View {
     @EnvironmentObject var appState: AppState
     @State private var showLoginSheet = false
     @State private var showAddressSheet = false
-    @State private var showPaymentSheet = false
     @State private var showNotificationsSheet = false
     @State private var showHelpSheet = false
     @State private var showLogoutAlert = false
+    @State private var showOrdersSheet = false
     @State private var addresses: [Address] = []
     
     var body: some View {
@@ -60,17 +60,18 @@ struct ProfileView: View {
                     Task {
                         await loadAddresses()
                     }
-                }
+                },
+                mode: .detail
             )
-        }
-        .sheet(isPresented: $showPaymentSheet) {
-            PaymentMethodsView()
         }
         .sheet(isPresented: $showNotificationsSheet) {
             NotificationsView()
         }
         .sheet(isPresented: $showHelpSheet) {
             HelpView()
+        }
+        .sheet(isPresented: $showOrdersSheet) {
+            OrdersView()
         }
         .alert("Çıkış Yap", isPresented: $showLogoutAlert) {
             Button("İptal", role: .cancel) { }
@@ -119,28 +120,125 @@ struct ProfileView: View {
     }
 
     private var profileHeader: some View {
-        VStack(spacing: 16) {
-            if let user = appState.currentUser {
-                Image(systemName: "person.circle.fill")
-                    .font(.system(size: 80))
-                    .foregroundColor(.logo)
+        HStack(spacing: 16) {
+            // Avatar
+            ZStack {
+                // Gradient background
+                LinearGradient(
+                    gradient: Gradient(colors: [Color.logo.opacity(0.8), Color.logo]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .frame(width: 80, height: 80)
+                .clipShape(Circle())
                 
-                Text(user.name)
-                    .font(CustomFont.bold(size: 24))
-                    .foregroundColor(.primary)
+                // Shimmer effect
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color.white.opacity(0.0),
+                                Color.white.opacity(0.3),
+                                Color.white.opacity(0.0)
+                            ]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 80, height: 80)
+                    .opacity(0.7)
                 
-                Text(user.phoneNumber)
-                    .font(CustomFont.regular(size: 16))
-                    .foregroundColor(.secondary)
+                // Avatar icon
+                Image(systemName: "person.fill")
+                    .font(.system(size: 32, weight: .medium))
+                    .foregroundColor(.white)
             }
+            .shadow(color: Color.logo.opacity(0.3), radius: 8, x: 0, y: 4)
+            
+            // User Info
+            VStack(alignment: .leading, spacing: 8) {
+                if let user = appState.currentUser {
+                    // Full name with sparkle effect
+                    HStack(spacing: 8) {
+                        Text("\(user.name) \(user.surname)")
+                            .font(CustomFont.bold(size: 20))
+                            .foregroundColor(.primary)
+                        
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 14))
+                            .foregroundColor(.logo)
+                            .opacity(0.8)
+                    }
+                    
+                    // Phone number
+                    HStack(spacing: 6) {
+                        Image(systemName: "phone.fill")
+                            .font(.system(size: 12))
+                            .foregroundColor(.logo)
+                        
+                        Text(user.phoneNumber)
+                            .font(CustomFont.medium(size: 14))
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    // Email if available
+                    if !user.email.isEmpty {
+                        HStack(spacing: 6) {
+                            Image(systemName: "envelope.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(.logo)
+                            
+                            Text(user.email)
+                                .font(CustomFont.medium(size: 14))
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+            }
+            
+            Spacer()
         }
-        .frame(maxWidth: .infinity)
-        .padding()
+        .padding(20)
         .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.white)
-                .shadow(color: Color.black.opacity(0.08), radius: 15, x: 0, y: 8)
+            ZStack {
+                // Main background
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color.white)
+                
+                // Subtle gradient overlay
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color.logo.opacity(0.02),
+                                Color.clear
+                            ]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                
+                // Sparkle decorations
+                VStack {
+                    HStack {
+                        Spacer()
+                        Image(systemName: "sparkle")
+                            .font(.system(size: 8))
+                            .foregroundColor(.logo.opacity(0.3))
+                            .offset(x: -10, y: 10)
+                    }
+                    Spacer()
+                    HStack {
+                        Image(systemName: "sparkle")
+                            .font(.system(size: 6))
+                            .foregroundColor(.logo.opacity(0.4))
+                            .offset(x: 15, y: -5)
+                        Spacer()
+                    }
+                }
+            }
         )
+        .shadow(color: Color.black.opacity(0.08), radius: 20, x: 0, y: 10)
         .padding(.horizontal)
     }
     
@@ -153,9 +251,9 @@ struct ProfileView: View {
             )
             
             menuItem(
-                icon: "creditcard.fill",
-                title: "Ödeme Yöntemlerim",
-                action: { showPaymentSheet = true }
+                icon: "list.clipboard.fill",
+                title: "Siparişlerim",
+                action: { showOrdersSheet = true }
             )
             
             menuItem(
@@ -180,30 +278,7 @@ struct ProfileView: View {
     }
     
     private func menuItem(icon: String, title: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 16) {
-                Image(systemName: icon)
-                    .font(.system(size: 24))
-                    .foregroundColor(.logo)
-                    .frame(width: 32)
-                
-                Text(title)
-                    .font(CustomFont.medium(size: 16))
-                    .foregroundColor(.primary)
-                
-                Spacer()
-                
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.gray)
-            }
-            .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.white)
-                    .shadow(color: Color.black.opacity(0.08), radius: 15, x: 0, y: 8)
-            )
-        }
+        MenuItemButton(icon: icon, title: title, action: action)
     }
     
     private func loadAddresses() async {
@@ -311,6 +386,89 @@ struct HelpView: View {
     }
 }
 
+struct MenuItemButton: View {
+    let icon: String
+    let title: String
+    let action: () -> Void
+    @State private var isPressed = false
+    @State private var shimmerOffset: CGFloat = -200
+    
+    var body: some View {
+        Button(action: {
+            // Basma animasyonu
+            withAnimation(.easeInOut(duration: 0.1)) {
+                isPressed = true
+            }
+            
+            // Action'ı çalıştır
+            action()
+            
+            // Animasyonu sıfırla
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                withAnimation(.easeInOut(duration: 0.1)) {
+                    isPressed = false
+                }
+            }
+        }) {
+            HStack(spacing: 16) {
+                // Icon with subtle glow
+                ZStack {
+                    Circle()
+                        .fill(Color.logo.opacity(0.1))
+                        .frame(width: 40, height: 40)
+                    
+                    Image(systemName: icon)
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundColor(.logo)
+                }
+                
+                Text(title)
+                    .font(CustomFont.medium(size: 16))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.gray)
+            }
+            .padding(16)
+            .background(
+                ZStack {
+                    // Main background
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.white)
+                    
+                    // Shimmer effect
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    Color.clear,
+                                    Color.white.opacity(0.3),
+                                    Color.clear
+                                ]),
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .offset(x: shimmerOffset)
+                        .clipped()
+                }
+            )
+            .shadow(color: Color.black.opacity(0.08), radius: 15, x: 0, y: 8)
+        }
+        .scaleEffect(isPressed ? 0.96 : 1.0)
+        .animation(.easeInOut(duration: 0.1), value: isPressed)
+        .onAppear {
+            // Shimmer animasyonu
+            withAnimation(.linear(duration: 2.0).repeatForever(autoreverses: false)) {
+                shimmerOffset = 200
+            }
+        }
+    }
+}
+
 struct FAQ: Identifiable {
     let id = UUID()
     let question: String
@@ -350,44 +508,6 @@ struct FAQCard: View {
             RoundedRectangle(cornerRadius: 12)
                 .fill(Color.gray.opacity(0.05))
         )
-    }
-}
-
-struct PaymentMethodsView: View {
-    var body: some View {
-        NavigationStack {
-            List {
-                Section {
-                    HStack {
-                        Image(systemName: "creditcard.fill")
-                            .foregroundColor(.logo)
-                        Text("Kredi Kartı")
-                        Spacer()
-                        Text("**** **** **** 1234")
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    HStack {
-                        Image(systemName: "creditcard")
-                            .foregroundColor(.logo)
-                        Text("Banka Kartı")
-                        Spacer()
-                        Text("**** **** **** 5678")
-                            .foregroundColor(.secondary)
-                    }
-                } header: {
-                    Text("Kayıtlı Kartlar")
-                }
-                
-                Section {
-                    Button(action: {}) {
-                        Label("Yeni Kart Ekle", systemImage: "plus.circle.fill")
-                    }
-                }
-            }
-            .navigationTitle("Ödeme Yöntemleri")
-            .navigationBarTitleDisplayMode(.inline)
-        }
     }
 }
 

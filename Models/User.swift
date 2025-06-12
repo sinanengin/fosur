@@ -2,10 +2,10 @@ import Foundation
 
 struct User {
     let id: UUID
-    let name: String
-    let surname: String
-    let email: String
-    let phoneNumber: String
+    var name: String
+    var surname: String
+    var email: String
+    var phoneNumber: String
     let profileImage: URL?
     var vehicles: [Vehicle] = []
 }
